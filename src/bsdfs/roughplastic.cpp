@@ -320,6 +320,32 @@ public:
         return m_specularReflectance->eval(its)*fresnelDielectricExt(1.0f, m_eta);
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        const bool hasSpecular = (bRec.typeMask & EGlossyReflection) &&
+            (bRec.component == -1 || bRec.component == 0);
+        if (!hasSpecular)
+            return 0.0f;
+
+        const bool hasDiffuse = (bRec.typeMask & EDiffuseReflection) &&
+            (bRec.component == -1 || bRec.component == 1);
+        if (!hasDiffuse)
+            return 1.0f;
+
+        MicrofacetDistribution distr(
+            m_type,
+            m_alpha->eval(bRec.its).average(),
+            m_sampleVisible
+        );
+
+        Float probSpecular = 1 - m_externalRoughTransmittance->eval(Frame::cosTheta(bRec.wi), distr.getAlpha());
+
+        probSpecular = (probSpecular*m_specularSamplingWeight) /
+            (probSpecular*m_specularSamplingWeight +
+            (1-probSpecular) * (1-m_specularSamplingWeight));
+
+        return probSpecular;
+    }
+
     /// Helper function: reflect \c wi with respect to a given surface normal
     inline Vector reflect(const Vector &wi, const Normal &m) const {
         return 2 * dot(wi, m) * Vector(m) - wi;

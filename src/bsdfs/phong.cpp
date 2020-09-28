@@ -116,6 +116,21 @@ public:
         return m_specularReflectance->eval(its);
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord& bRec) const {
+        const bool hasSpecular = (bRec.typeMask & EGlossyReflection)
+                && (bRec.component == -1 || bRec.component == 0);
+        if (!hasSpecular)
+            return 0.0f;
+
+        const bool hasDiffuse  = (bRec.typeMask & EDiffuseReflection)
+                && (bRec.component == -1 || bRec.component == 1);
+
+        if (!hasDiffuse)
+            return 1.0f;
+
+        return m_specularSamplingWeight;
+    }
+
     /// Reflection in local coordinates
     inline Vector reflect(const Vector &wi) const {
         return Vector(-wi.x, -wi.y, wi.z);

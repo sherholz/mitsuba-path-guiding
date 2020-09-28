@@ -210,6 +210,38 @@ public:
             return m_nestedBRDF[1]->getSpecularReflectance(its);
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EGlossy))
+            return 0.0f;
+
+        if (bRec.wi.z > 0)
+            return m_nestedBRDF[0]->getGlossySamplingRate(bRec);
+        else
+        {
+            BSDFSamplingRecord bRecBackside {bRec};
+            bRecBackside.wi.z *= -1.0f;
+            if (bRecBackside.component != -1)
+                bRecBackside.component -= m_nestedBRDF[0]->getComponentCount();
+            return m_nestedBRDF[1]->getGlossySamplingRate(bRecBackside);
+        }
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EDelta))
+            return 0.0f;
+
+        if (bRec.wi.z > 0)
+            return m_nestedBRDF[0]->getDeltaSamplingRate(bRec);
+        else
+        {
+            BSDFSamplingRecord bRecBackside {bRec};
+            bRecBackside.wi.z *= -1.0f;
+            if (bRecBackside.component != -1)
+                bRecBackside.component -= m_nestedBRDF[0]->getComponentCount();
+            return m_nestedBRDF[1]->getDeltaSamplingRate(bRecBackside);
+        }
+    }
+
     Float getRoughness(const Intersection &its, int component) const {
         if (component < m_nestedBRDF[0]->getComponentCount()) {
             return m_nestedBRDF[0]->getRoughness(its, component);

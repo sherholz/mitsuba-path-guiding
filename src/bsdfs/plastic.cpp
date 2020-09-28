@@ -226,6 +226,25 @@ public:
         return m_specularReflectance->eval(its);
     }
 
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        const bool hasSpecular = (bRec.typeMask & EDeltaReflection)
+                && (bRec.component == -1 || bRec.component == 0);
+
+        if (!hasSpecular)
+            return 0.0f;
+
+        const bool hasDiffuse = (bRec.typeMask & EDiffuseReflection)
+                && (bRec.component == -1 || bRec.component == 1);
+
+        if (!hasDiffuse)
+            return 1.0f;
+
+        const Float Fi = fresnelDielectricExt(Frame::cosTheta(bRec.wi), m_eta);
+        return (Fi*m_specularSamplingWeight) /
+                (Fi*m_specularSamplingWeight +
+                 (1-Fi) * (1-m_specularSamplingWeight));
+    }
+
     void addChild(const std::string &name, ConfigurableObject *child) {
         if (child->getClass()->derivesFrom(MTS_CLASS(Texture))) {
             if (name == "specularReflectance")

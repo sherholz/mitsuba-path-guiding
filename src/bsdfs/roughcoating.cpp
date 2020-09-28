@@ -226,6 +226,85 @@ public:
         BSDF::configure();
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EGlossy))
+            return 0.0f;
+
+        bool hasNested = (bRec.typeMask & m_nested->getType() & BSDF::EAll)
+            && (bRec.component == -1 || bRec.component < (int) m_components.size()-1);
+        bool hasSpecular = (bRec.typeMask & EGlossyReflection)
+            && (bRec.component == -1 || bRec.component == (int) m_components.size()-1);
+
+        if (!hasSpecular && !hasNested)
+            return 0.0f;
+
+        if (!hasNested)
+            return 1.0f;
+
+        BSDFSamplingRecord bRecNested {bRec};
+        bRecNested.wi = refractTo(EInterior, bRec.wi);
+
+        if (hasSpecular)
+        {
+            MicrofacetDistribution distr(
+                m_type,
+                m_alpha->eval(bRec.its).average(),
+                m_sampleVisible
+            );
+
+            /* Find the probability of sampling the diffuse component */
+            Float probSpecular = 1 - m_roughTransmittance->eval(
+                std::abs(Frame::cosTheta(bRec.wi)), distr.getAlpha());
+
+            /* Reallocate samples */
+            probSpecular = (probSpecular*m_specularSamplingWeight) /
+                (probSpecular*m_specularSamplingWeight +
+                (1-probSpecular) * (1-m_specularSamplingWeight));
+
+            return probSpecular+(1.0f-probSpecular)*m_nested->getGlossySamplingRate(bRecNested);
+        }
+        else
+            return m_nested->getGlossySamplingRate(bRecNested);
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EDelta))
+            return 0.0f;
+
+        bool hasNested = (bRec.typeMask & m_nested->getType() & BSDF::EAll)
+                && (bRec.component == -1 || bRec.component < (int) m_components.size()-1);
+        bool hasSpecular = (bRec.typeMask & EGlossyReflection)
+                && (bRec.component == -1 || bRec.component == (int) m_components.size()-1);
+
+        if (!hasNested)
+            return 0.0f;
+
+        BSDFSamplingRecord bRecNested {bRec};
+        bRecNested.wi = refractTo(EInterior, bRec.wi);
+
+        if (hasSpecular)
+        {
+            MicrofacetDistribution distr(
+                        m_type,
+                        m_alpha->eval(bRec.its).average(),
+                        m_sampleVisible
+                        );
+
+            /* Find the probability of sampling the diffuse component */
+            Float probSpecular = 1 - m_roughTransmittance->eval(
+                        std::abs(Frame::cosTheta(bRec.wi)), distr.getAlpha());
+
+            /* Reallocate samples */
+            probSpecular = (probSpecular*m_specularSamplingWeight) /
+                    (probSpecular*m_specularSamplingWeight +
+                     (1-probSpecular) * (1-m_specularSamplingWeight));
+
+            return (1.0f-probSpecular)*m_nested->getDeltaSamplingRate(bRecNested);
+        }
+        else
+            return m_nested->getDeltaSamplingRate(bRecNested);
+    }
+
     /// Helper function: reflect \c wi with respect to a given surface normal
     inline Vector reflect(const Vector &wi, const Normal &m) const {
         return 2 * dot(wi, m) * Vector(m) - wi;

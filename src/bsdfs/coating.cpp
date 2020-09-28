@@ -199,6 +199,60 @@ public:
         }
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        const bool sampleSpecular = (bRec.typeMask & EDeltaReflection)
+            && (bRec.component == -1 || bRec.component == (int) m_components.size()-1);
+        const bool sampleNested = (bRec.typeMask & m_nested->getType() & BSDF::EAll)
+            && (bRec.component == -1 || bRec.component < (int) m_components.size()-1);
+
+        if (!sampleNested)
+            return 0.0f;
+
+        Float R12;
+
+        BSDFSamplingRecord bRecNested {bRec};
+        bRecNested.wi = refractIn(bRec.wi, R12);
+
+        if (sampleSpecular)
+        {
+            const Float probSpecular = (R12*m_specularSamplingWeight) /
+                (R12*m_specularSamplingWeight +
+                (1-R12) * (1-m_specularSamplingWeight));
+
+            return (1.0f-probSpecular)*m_nested->getGlossySamplingRate(bRecNested);
+        }
+        else
+            return m_nested->getGlossySamplingRate(bRecNested);
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        const bool sampleSpecular = (bRec.typeMask & EDeltaReflection)
+                && (bRec.component == -1 || bRec.component == (int) m_components.size()-1);
+        const bool sampleNested = (bRec.typeMask & m_nested->getType() & BSDF::EAll)
+                && (bRec.component == -1 || bRec.component < (int) m_components.size()-1);
+
+        if (!sampleSpecular && !sampleNested)
+            return 0.0f;
+        else if (!sampleNested)
+            return 1.0f;
+
+        Float R12;
+
+        BSDFSamplingRecord bRecNested {bRec};
+        bRecNested.wi = refractIn(bRec.wi, R12);
+
+        if (sampleSpecular)
+        {
+            const Float probSpecular = (R12*m_specularSamplingWeight) /
+                    (R12*m_specularSamplingWeight +
+                     (1-R12) * (1-m_specularSamplingWeight));
+
+            return probSpecular+(1.0f-probSpecular)*m_nested->getDeltaSamplingRate(bRecNested);
+        }
+        else
+            return m_nested->getDeltaSamplingRate(bRecNested);
+    }
+
     /// Reflection in local coordinates
     inline Vector reflect(const Vector &wi) const {
         return Vector(-wi.x, -wi.y, wi.z);

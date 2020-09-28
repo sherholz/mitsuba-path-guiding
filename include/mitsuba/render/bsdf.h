@@ -358,6 +358,24 @@ public:
         return Spectrum(0.0f);
     }
 
+    virtual Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        if ((m_combinedType&EAll&~EGlossy) == 0)
+            return 1.0f;
+
+        if (EXPECT_NOT_TAKEN(hasComponent(EGlossy)))
+            Log(EWarn, "getGlossySamplingRate not implemented in %s. Defaulting to 0.", getClass()->getName().c_str());
+        return 0.0f;
+    }
+
+    virtual Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        if ((m_combinedType&EAll&~EDelta) == 0)
+            return 1.0f;
+
+        if (EXPECT_NOT_TAKEN(hasComponent(EDelta)))
+            Log(EWarn, "getDeltaSamplingRate not implemented in %s. Defaulting to 0.", getClass()->getName().c_str());
+        return 0.0f;
+    }
+
     /**
      * \brief Sample the BSDF and return the importance weight (i.e. the
      * value of the BSDF divided by the probability density of the sample).

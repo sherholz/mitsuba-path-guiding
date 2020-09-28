@@ -219,7 +219,57 @@ public:
     }
 
     Float getRoughness(const Intersection &its, int component) const {
+        if (component == getComponentCount()-1)
+            return 0.0f;
+
         return m_nestedBSDF->getRoughness(its, component);
+    }
+
+    Spectrum getDiffuseReflectance(const Intersection &its) const {
+        return m_opacity->eval(its)*m_nestedBSDF->getDiffuseReflectance(its);
+    }
+
+    Spectrum getSpecularReflectance(const Intersection &its) const {
+        return m_opacity->eval(its)*m_nestedBSDF->getSpecularReflectance(its);
+    }
+
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        bool sampleTransmission = bRec.typeMask & ENull
+            && (bRec.component == -1 || bRec.component == getComponentCount()-1);
+        bool sampleNested = bRec.component == -1 || bRec.component < getComponentCount()-1;
+
+        if (!sampleNested)
+            return 0.0f;
+
+        if (sampleTransmission)
+        {
+            Spectrum opacity = m_opacity->eval(bRec.its);
+            Float prob = opacity.getLuminance();
+
+            return prob*m_nestedBSDF->getGlossySamplingRate(bRec);
+        }
+        else
+            return m_nestedBSDF->getGlossySamplingRate(bRec);
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        bool sampleTransmission = bRec.typeMask & ENull
+                && (bRec.component == -1 || bRec.component == getComponentCount()-1);
+        bool sampleNested = bRec.component == -1 || bRec.component < getComponentCount()-1;
+
+        if (sampleTransmission && sampleNested)
+        {
+            Spectrum opacity = m_opacity->eval(bRec.its);
+            Float prob = opacity.getLuminance();
+
+            return prob*m_nestedBSDF->getDeltaSamplingRate(bRec)+(1.0f-prob);
+        }
+        else if (sampleTransmission)
+            return 1.0f;
+        else if (sampleNested)
+            return m_nestedBSDF->getDeltaSamplingRate(bRec);
+
+        return 0.0f;
     }
 
     void addChild(const std::string &name, ConfigurableObject *child) {

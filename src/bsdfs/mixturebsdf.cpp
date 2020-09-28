@@ -286,6 +286,54 @@ public:
         }
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EGlossy))
+            return 0.0f;
+
+        if (bRec.component == -1)
+        {
+            Float glossySamplingRate = 0.0f;
+
+            for (size_t i=0; i<m_bsdfs.size(); ++i)
+                glossySamplingRate += m_bsdfs[i]->getGlossySamplingRate(bRec)*m_pdf[i];
+
+            return glossySamplingRate;
+        }
+        else
+        {
+            BSDFSamplingRecord componentBRec {bRec};
+
+            int requestedComponent = bRec.component;
+            int bsdfIndex = m_indices[requestedComponent].first;
+            componentBRec.component = m_indices[requestedComponent].second;
+            return m_bsdfs[bsdfIndex]->getGlossySamplingRate(componentBRec);
+        }
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EDelta))
+            return 0.0f;
+
+        if (bRec.component == -1)
+        {
+            Float deltaSamplingRate = 0.0f;
+
+            for (size_t i=0; i<m_bsdfs.size(); ++i)
+                deltaSamplingRate += m_bsdfs[i]->getDeltaSamplingRate(bRec)*m_pdf[i];
+
+            return deltaSamplingRate;
+        }
+        else
+        {
+            BSDFSamplingRecord componentBRec {bRec};
+
+            int requestedComponent = bRec.component;
+            int bsdfIndex = m_indices[requestedComponent].first;
+            componentBRec.component = m_indices[requestedComponent].second;
+            return m_bsdfs[bsdfIndex]->getDeltaSamplingRate(componentBRec);
+        }
+    }
+
     Float getRoughness(const Intersection &its, int component) const {
         int bsdfIndex = m_indices[component].first;
         component = m_indices[component].second;

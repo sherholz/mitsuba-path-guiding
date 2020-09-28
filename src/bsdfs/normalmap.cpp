@@ -85,6 +85,40 @@ public:
         return m_nested->getSpecularReflectance(its);
     }
 
+    Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EGlossy))
+            return 0.0f;
+
+        const Intersection& its = bRec.its;
+        Intersection perturbed(its);
+        perturbed.shFrame = getFrame(its);
+
+        BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
+        perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+        perturbedQuery.sampler = bRec.sampler;
+        perturbedQuery.typeMask = bRec.typeMask;
+        perturbedQuery.component = bRec.component;
+
+        return m_nested->getGlossySamplingRate(perturbedQuery);
+    }
+
+    Float getDeltaSamplingRate(const BSDFSamplingRecord &bRec) const {
+        if (!hasComponent(EDelta))
+            return 0.0f;
+
+        const Intersection& its = bRec.its;
+        Intersection perturbed(its);
+        perturbed.shFrame = getFrame(its);
+
+        BSDFSamplingRecord perturbedQuery(perturbed, bRec.sampler, bRec.mode);
+        perturbedQuery.wi = perturbed.toLocal(its.toWorld(bRec.wi));
+        perturbedQuery.sampler = bRec.sampler;
+        perturbedQuery.typeMask = bRec.typeMask;
+        perturbedQuery.component = bRec.component;
+
+        return m_nested->getDeltaSamplingRate(perturbedQuery);
+    }
+
     void addChild(const std::string &name, ConfigurableObject *child) {
         if (child->getClass()->derivesFrom(MTS_CLASS(BSDF))) {
             if (m_nested != NULL)
