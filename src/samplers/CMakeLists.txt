@@ -13,3 +13,5 @@ add_sampler(halton      halton.cpp faure.h faure.cpp)
 add_sampler(hammersley  hammersley.cpp faure.h faure.cpp)
 add_sampler(ldsampler   ldsampler.cpp)
 add_sampler(sobol       sobol.cpp sobolseq.h sobolseq.cpp)
+
+add_sampler(deterministic deterministic.cpp)

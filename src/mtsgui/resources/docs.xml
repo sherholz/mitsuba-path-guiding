@@ -831,6 +831,26 @@
         <param name="sampleCount" readableName="Samples per pixel" type="integer" default="4">Number of samples per pixel</param>
     </plugin>
 
+    <plugin type="sampler" name="deterministic" readableName="Deterministic Independent sampler" show="true" className="DeterministicSampler" extends="Sampler">
+        <descr>
+            <p>The independent sampler produces a stream of independent and uniformly
+            distributed pseudorandom numbers. Internally, it relies on a fast SIMD version
+            of the Mersenne Twister random number generator.</p>
+
+            <p>This is the most basic sample generator; because no precautions are taken to avoid
+            sample clumping, images produced using this plugin will usually take longer to converge.
+            In theory, this sampler is initialized using a deterministic procedure, which means
+            that subsequent runs of Mitsuba should create the same image. In practice, when
+            rendering with multiple threads and/or machines, this is not true anymore, since the
+            ordering of samples is influenced by the operating system scheduler.</p>
+
+            <p>Note that the Metropolis-type integrators implemented in Mitsuba are incompatible with
+            the more sophisticated sample generators shown in this section. They <em>require</em> this
+            specific sampler and refuse to work otherwise.</p>
+        </descr>
+        <param name="sampleCount" readableName="Samples per pixel" type="integer" default="4">Number of samples per pixel</param>
+    </plugin>
+
     <plugin type="sampler" name="stratified" readableName="Stratified sampler" show="true" className="StratifiedSampler" extends="Sampler">
         <descr>
             <p>The stratified sample generator divides the domain into a discrete number
