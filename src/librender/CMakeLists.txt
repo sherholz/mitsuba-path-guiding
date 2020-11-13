@@ -23,6 +23,7 @@ set(HDRS
   ${INCLUDE_DIR}/phase.h
   ${INCLUDE_DIR}/photon.h
   ${INCLUDE_DIR}/photonmap.h
+  ${INCLUDE_DIR}/progressiveintegrator.h
   ${INCLUDE_DIR}/range.h
   ${INCLUDE_DIR}/records.inl
   ${INCLUDE_DIR}/rectwu.h
@@ -67,6 +68,7 @@ set(SRCS
   phase.cpp
   photon.cpp
   photonmap.cpp
+  progressiveintegrator.cpp
   rectwu.cpp
   renderjob.cpp
   renderproc.cpp

@@ -47,6 +47,11 @@
         </param>
     </plugin>
 
+    <plugin type="integrator" className="ProgressiveMonteCarloIntegrator" abstract="true" extends="MonteCarloIntegrator">
+        <shortDescr>Base class of all sampling-based integrators</shortDescr>
+        <descr>Base class of all sampling-based integrators</descr>
+    </plugin>
+
     <plugin type="integrator" name="irrcache" readableName="Irradiance cache"
             className="IrradianceCacheIntegrator">
         <descr>
@@ -203,6 +208,16 @@
 
     <plugin type="integrator" name="path" readableName="Path tracer"
             show="true" className="MIPathTracer" extends="MonteCarloIntegrator">
+        <descr>
+            This integrator implements a basic path tracer with multiple importance sampling and is a <em>good
+            default choice</em> when there is no strong reason to prefer another method.
+            It does not account for participating media, such as fog or smoke&mdash;see
+            the volumetric path tracer if this is needed.
+        </descr>
+    </plugin>
+
+    <plugin type="integrator" name="progressivepath" readableName="Progressive Path tracer"
+            show="true" className="ProgressiveMIPathTracer" extends="ProgressiveMonteCarloIntegrator">
         <descr>
             This integrator implements a basic path tracer with multiple importance sampling and is a <em>good
             default choice</em> when there is no strong reason to prefer another method.
