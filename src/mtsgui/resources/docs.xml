@@ -252,6 +252,18 @@
         </descr>
     </plugin>
 
+    <plugin type="integrator" name="progressivevolpath" readableName = "Progressive volumetric path tracer (Extended)"
+            show="true" className="ProgressiveVolumetricPathTracer" extends="ProgressiveMonteCarloIntegrator">
+        <descr>
+            This plugin provides a volumetric path tracer that can be used to
+            compute approximate solutions to the radiative transfer equation.
+            Its implementation makes use of multiple importance sampling to
+            combine BSDF and phase function sampling with direct illumination
+            sampling strategies. On surfaces, this integrator behaves exactly
+            like the standard path tracer.
+        </descr>
+    </plugin>
+
     <plugin type="integrator" name="ptracer" readableName="Adjoint particle tracer" show="true"
             className="ParticleTracer" extends="ImageBasedIntegrator">
     <descr>
