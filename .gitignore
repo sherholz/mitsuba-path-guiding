@@ -19,6 +19,23 @@ config.py
 config.log
 *.pyc
 
+# CMake-related
+build/.cmake
+build/.ninja*
+build/build.ninja
+build/cmake_install.cmake
+build/CMakeCache.txt
+build/binaries
+build/src
+build/data
+build/CMakeFiles
+build/rules.ninja
+build/install_manifest.txt
+
+# VSCode-related
+.vscode
+.idea
+
 # MSVC++-related
 build/mitsuba-msvc2017.sdf
 build/mitsuba-msvc2017.suo
@@ -32,6 +49,7 @@ dist
 
 # Dependencies
 dependencies
+3rdparty
 
 # OSX binaries and byproducts
 Mitsuba.app
