@@ -335,12 +335,14 @@ void Scene::initBSDFandPhaseFunctions() {
 
     for(size_t i=0; i< m_shapes.size(); i++){
         ref<BSDF> bsdf = m_shapes[i]->getBSDF();
-        if(bsdf->getUID()== -1){
-            bsdf->setUID(m_bsdfs.size());
-            if (bsdf->getID() == "unnamed"){
-                bsdf->setID( "unnamed_bsdf_" + std::to_string(m_bsdfs.size()));
+        if(bsdf){
+            if(bsdf->getUID()== -1){
+                bsdf->setUID(m_bsdfs.size());
+                if (bsdf->getID() == "unnamed"){
+                    bsdf->setID( "unnamed_bsdf_" + std::to_string(m_bsdfs.size()));
+                }
+                m_bsdfs.push_back(bsdf);
             }
-            m_bsdfs.push_back(bsdf);
         }
     }
 
