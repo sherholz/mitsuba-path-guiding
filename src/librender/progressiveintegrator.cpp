@@ -297,7 +297,7 @@ MTS_NAMESPACE_BEGIN
 
      /// Create a integrator
      ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(const Properties &props):MonteCarloIntegrator(props){
-         m_passSPP = props.getInteger("progressiveMC.passSPP", 4);
+         m_passSPP = props.getInteger("progressiveMC.passSPP", 1);
          m_maxTime = props.getInteger("progressiveMC.maxTime", 0);
      }
      /// Unserialize an integrator
