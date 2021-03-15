@@ -706,12 +706,12 @@ Spectrum Scene::evalTransmittance(const Point &p1, bool p1OnSurface, const Point
             }
             medium = its.getTargetMedium(d);
         }
-
+#ifdef MTS_IGNORE_NULLBSDF_INTERSECTIONS
         if (++interactions > 100) { /// Just a precaution..
             Log(EWarn, "evalTransmittance(): round-off error issues?");
             break;
         }
-
+#endif
         ray.o = ray(its.t);
         remaining -= its.t;
         ray.maxt = remaining * lengthFactor;

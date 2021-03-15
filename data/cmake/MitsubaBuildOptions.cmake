@@ -10,7 +10,7 @@ endif()
 if (MTS_CMAKE_INIT)
   set(MTS_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    set(MTS_CXX_FLAGS "-fvisibility=hidden -pipe -march=nocona -Wall -msse -ftree-vectorize -funsafe-math-optimizations -fno-rounding-math -fno-signaling-nans -fno-math-errno -fomit-frame-pointer")
+    set(MTS_CXX_FLAGS "-fvisibility=hidden -pipe -march=nocona -Wall -msse -ftree-vectorize -funsafe-math-optimizations -fno-rounding-math -fno-signaling-nans -fno-math-errno")
   endif()
   if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(MTS_CXX_FLAGS "${MTS_CXX_FLAGS} -mfpmath=sse -mtls-dialect=gnu2")
@@ -128,6 +128,12 @@ endif()
 option(MTS_NOSHADINGNORMAL "Remove Shading normal computation (Adjoint PT)" OFF)
 if (MTS_NOSHADINGNORMAL)
   add_definitions(-DMTS_NOSHADINGNORMAL)
+endif()
+
+# If we want treat index-matheched (NullBSDF) intersections or not
+option(MTS_IGNORE_NULLBSDF_INTERSECTIONS "Ignore indexed-mathched (NullBSDF) intersections" IN)
+if (MTS_IGNORE_NULLBSDF_INTERSECTIONS)
+  add_definitions(-DMTS_IGNORE_NULLBSDF_INTERSECTIONS)
 endif()
 
 # Use CUDA as an option

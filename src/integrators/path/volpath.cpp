@@ -296,7 +296,9 @@ public:
                     rRec.type = scattered ? RadianceQueryRecord::ERadianceNoEmission
                         : RadianceQueryRecord::ERadiance;
                     scene->rayIntersect(ray, its);
+#ifdef MTS_IGNORE_NULLBSDF_INTERSECTIONS
                     rRec.depth++;
+#endif
                     continue;
                 }
 
@@ -405,11 +407,12 @@ public:
             ray.o = ray(its->t);
             ray.mint = Epsilon;
             its = &its2;
-
+#ifdef MTS_IGNORE_NULLBSDF_INTERSECTIONS
             if (++interactions > 100) { /// Just a precaution..
                 Log(EWarn, "rayIntersectAndLookForEmitter(): round-off error issues?");
                 return;
             }
+#endif
         }
 
         if (surface) {
