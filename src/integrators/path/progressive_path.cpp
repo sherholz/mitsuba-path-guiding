@@ -25,7 +25,7 @@ MTS_NAMESPACE_BEGIN
 
 static StatsCounter avgPathLength("Path tracer", "Average path length", EAverage);
 
-/*! \plugin{path}{Path tracer}
+/*! \plugin{path}{Progressive path tracer}
  * \order{2}
  * \parameters{
  *     \parameter{maxDepth}{\Integer}{Specifies the longest path depth
@@ -112,7 +112,10 @@ static StatsCounter avgPathLength("Path tracer", "Average path length", EAverage
 class ProgressiveMIPathTracer : public ProgressiveMonteCarloIntegrator {
 public:
     ProgressiveMIPathTracer(const Properties &props)
-        : ProgressiveMonteCarloIntegrator(props) { }
+        : ProgressiveMonteCarloIntegrator(props) 
+    {
+        m_useNee = props.getBoolean("useNee", true);
+    }
 
     /// Unserialize from a binary data stream
     ProgressiveMIPathTracer(Stream *stream, InstanceManager *manager)
@@ -173,7 +176,7 @@ public:
             /* Estimate the direct illumination if this is requested */
             DirectSamplingRecord dRec(its);
 
-            if (rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance &&
+            if (m_useNee && (rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance) &&
                 (bsdf->getType() & BSDF::ESmooth)) {
                 Spectrum value = scene->sampleEmitterDirect(dRec, rRec.nextSample2D());
                 if (!value.isZero()) {
@@ -260,9 +263,10 @@ public:
                 (rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance)) {
                 /* Compute the prob. of generating that direction using the
                    implemented direct illumination sampling technique */
-                const Float lumPdf = (!(bRec.sampledType & BSDF::EDelta)) ?
+                const Float lumPdf = (m_useNee && !(bRec.sampledType & BSDF::EDelta)) ?
                     scene->pdfEmitterDirect(dRec) : 0;
-                Li += throughput * value * miWeight(bsdfPdf, lumPdf);
+                const Float weight = (m_useNee) ? miWeight(bsdfPdf, lumPdf): 1.0f;
+                Li += throughput * value * weight;
             }
 
             /* ==================================================================== */
@@ -314,10 +318,11 @@ public:
             << "]";
         return oss.str();
     }
-
+private:
+    bool m_useNee;
     MTS_DECLARE_CLASS()
 };
 
 MTS_IMPLEMENT_CLASS_S(ProgressiveMIPathTracer, false, MonteCarloIntegrator)
-MTS_EXPORT_PLUGIN(ProgressiveMIPathTracer, "MI path tracer");
+MTS_EXPORT_PLUGIN(ProgressiveMIPathTracer, "Progressive MI path tracer");
 MTS_NAMESPACE_END

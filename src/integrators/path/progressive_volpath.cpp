@@ -25,7 +25,7 @@ MTS_NAMESPACE_BEGIN
 
 static StatsCounter avgPathLength("Progressive volumetric path tracer", "Average path length", EAverage);
 
-/*!\plugin{volpath}{Extended volumetric path tracer}
+/*!\plugin{volpath}{Progressive extended volumetric path tracer}
  * \order{4}
  * \parameters{
  *     \parameter{maxDepth}{\Integer}{Specifies the longest path depth
@@ -77,7 +77,10 @@ static StatsCounter avgPathLength("Progressive volumetric path tracer", "Average
  */
 class ProgressiveVolumetricPathTracer : public ProgressiveMonteCarloIntegrator {
 public:
-    ProgressiveVolumetricPathTracer(const Properties &props) : ProgressiveMonteCarloIntegrator(props) { }
+    ProgressiveVolumetricPathTracer(const Properties &props) : ProgressiveMonteCarloIntegrator(props) 
+    {
+        m_useNee = props.getBoolean("useNee", true);
+    }
 
     /// Unserialize from a binary data stream
     ProgressiveVolumetricPathTracer(Stream *stream, InstanceManager *manager)
@@ -121,7 +124,7 @@ public:
                 /* Estimate the single scattering component if this is requested */
                 DirectSamplingRecord dRec(mRec.p, mRec.time);
 
-                if (rRec.type & RadianceQueryRecord::EDirectMediumRadiance) {
+                if (m_useNee && (rRec.type & RadianceQueryRecord::EDirectMediumRadiance)) {
                     int interactions = m_maxDepth - rRec.depth - 1;
 
                     Spectrum value = scene->sampleAttenuatedEmitterDirect(
@@ -154,10 +157,10 @@ public:
 
                 Float phasePdf;
                 PhaseFunctionSamplingRecord pRec(mRec, -ray.d);
-                Float phaseVal = phase->sample(pRec, phasePdf, rRec.sampler);
-                if (phaseVal == 0)
+                Float phaseWeight = phase->sample(pRec, phasePdf, rRec.sampler);
+                if (phaseWeight == 0)
                     break;
-                throughput *= phaseVal;
+                throughput *= phaseWeight;
 
                 /* Trace a ray in this direction */
                 ray = Ray(mRec.p, pRec.wo, ray.time);
@@ -169,9 +172,10 @@ public:
 
                 /* If a luminaire was hit, estimate the local illumination and
                    weight using the power heuristic */
-                if (!value.isZero() && (rRec.type & RadianceQueryRecord::EDirectMediumRadiance)) {
-                    const Float emitterPdf = scene->pdfEmitterDirect(dRec);
-                    Li += throughput * value * miWeight(phasePdf, emitterPdf);
+                if (!value.isZero() && value.min() > 0.f && (rRec.type & RadianceQueryRecord::EDirectMediumRadiance)) {
+                    const Float emitterPdf = (m_useNee) ? scene->pdfEmitterDirect(dRec): 0.0f;
+                    const Float weight = (m_useNee) ? miWeight(phasePdf, emitterPdf) : 1.0f;
+                    Li += throughput * value * weight;
                 }
 
                 /* ==================================================================== */
@@ -205,13 +209,21 @@ public:
                 }
 
                 /* Possibly include emitted radiance if requested */
+                /* Note: The following is usally only true a light source is hit directly
+                   by a primary ray. At the end of this loop rRec.type is set to ERadianceNoEmission*/
                 if (its.isEmitter() && (rRec.type & RadianceQueryRecord::EEmittedRadiance)
                     && (!m_hideEmitters || scattered))
-                    Li += throughput * its.Le(-ray.d);
+                {
+                    const Spectrum emittedRadiance = its.Le(-ray.d);
+                    Li += throughput * emittedRadiance;
+                }
 
                 /* Include radiance from a subsurface integrator if requested */
                 if (its.hasSubsurface() && (rRec.type & RadianceQueryRecord::ESubsurfaceRadiance))
-                    Li += throughput * its.LoSub(scene, rRec.sampler, -ray.d, rRec.depth);
+                {
+                    const Spectrum subsurfaceScatteredRadiance = its.LoSub(rRec.scene, rRec.sampler, -ray.d, rRec.depth);
+                    Li += throughput * subsurfaceScatteredRadiance;
+		 }
 
                 if (rRec.depth >= m_maxDepth && m_maxDepth != -1)
                     break;
@@ -230,7 +242,7 @@ public:
                 DirectSamplingRecord dRec(its);
 
                 /* Estimate the direct illumination if this is requested */
-                if ((rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance) &&
+                if (m_useNee &&(rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance) &&
                     (bsdf->getType() & BSDF::ESmooth)) {
                     int interactions = m_maxDepth - rRec.depth - 1;
 
@@ -258,7 +270,8 @@ public:
 
                             /* Weight using the power heuristic */
                             const Float weight = miWeight(dRec.pdf, bsdfPdf);
-                            Li += throughput * value * bsdfVal * weight;
+                            const Spectrum contr = value*bsdfVal*weight;
+                            Li += throughput * contr;
                         }
                     }
                 }
@@ -304,6 +317,7 @@ public:
                     continue;
                 }
 
+                // querrying emission from the next surface intersection 
                 Spectrum value(0.0f);
                 rayIntersectAndLookForEmitter(scene, rRec.sampler, rRec.medium,
                     m_maxDepth - rRec.depth - 1, ray, its, dRec, value);
@@ -311,9 +325,12 @@ public:
                 /* If a luminaire was hit, estimate the local illumination and
                    weight using the power heuristic */
                 if (!value.isZero() && (rRec.type & RadianceQueryRecord::EDirectSurfaceRadiance)) {
-                    const Float emitterPdf = (!(bRec.sampledType & BSDF::EDelta)) ?
+                    const Float emitterPdf = (m_useNee && !(bRec.sampledType & BSDF::EDelta)) ?
                         scene->pdfEmitterDirect(dRec) : 0;
-                    Li += throughput * value * miWeight(bsdfPdf, emitterPdf);
+                        const Float weight = (m_useNee) ? miWeight(bsdfPdf, emitterPdf): 1.0f;
+                        Li += throughput * value * weight;
+
+
                 }
 
                 /* ==================================================================== */
@@ -451,6 +468,8 @@ public:
         return oss.str();
     }
 
+private:
+    bool m_useNee;
     MTS_DECLARE_CLASS()
 };
 
