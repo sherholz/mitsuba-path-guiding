@@ -60,13 +60,8 @@ endif()
 #find_package(Qt4 COMPONENTS
 #  QtCore QtGui QtXml QtXmlPatterns QtNetwork QtOpenGL)
 # Qt5 NOT Optional
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Qt5Xml REQUIRED)
-find_package(Qt5XmlPatterns REQUIRED)
-find_package(Qt5Network REQUIRED)
-find_package(Qt5OpenGL REQUIRED)
-find_package(Qt5Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Xml XmlPatterns Network OpenGL Widgets REQUIRED)
+
 CMAKE_DEPENDENT_OPTION(BUILD_GUI "Built the Qt5-based mitsuba GUI." ON "Qt5Core_FOUND" OFF)
   
 # System threading library, used for custom options
