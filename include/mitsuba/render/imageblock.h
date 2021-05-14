@@ -106,6 +106,13 @@ public:
                 - Vector2i(block->getBorderSize() - m_borderSize)));
     }
 
+    /// Remove another image block into this one
+    inline void remove(const ImageBlock *block) {
+        m_bitmap->substract(block->getBitmap(),
+            Point2i(block->getOffset() - m_offset
+                - Vector2i(block->getBorderSize() - m_borderSize)));
+    }
+
     /**
      * \brief Store a single sample inside the image block
      *

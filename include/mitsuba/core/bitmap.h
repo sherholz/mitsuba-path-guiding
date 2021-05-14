@@ -964,6 +964,55 @@ public:
         copyFrom(bitmap, Point2i(0), Point2i(0), bitmap->getSize());
     }
 
+/**
+     * \brief Accumulate the contents of another bitmap into the
+     * region with the specified offset
+     *
+     * Out-of-bounds regions are ignored. It is assumed that
+     * <tt>bitmap != this</tt>.
+     *
+     * \remark This function throws an exception when the bitmaps
+     * use different component formats or channels, or when the
+     * component format is \ref EBitmask.
+     */
+    void substract(const Bitmap *bitmap, Point2i sourceOffset,
+            Point2i targetOffset, Vector2i size);
+
+    /**
+     * \brief Accumulate the contents of another bitmap into the
+     * region with the specified offset
+     *
+     * This convenience function calls the main <tt>accumulate()</tt>
+     * implementation with <tt>size</tt> set to <tt>bitmap->getSize()</tt>
+     * and <tt>sourceOffset</tt> set to zero. Out-of-bounds regions are
+     * ignored. It is assumed that <tt>bitmap != this</tt>.
+     *
+     * \remark This function throws an exception when the bitmaps
+     * use different component formats or channels, or when the
+     * component format is \ref EBitmask.
+     */
+    inline void substract(const Bitmap *bitmap, Point2i targetOffset) {
+        substract(bitmap, Point2i(0), targetOffset, bitmap->getSize());
+    }
+
+    /**
+     * \brief Accumulate the contents of another bitmap into the
+     * region with the specified offset
+     *
+     * This convenience function calls the main <tt>accumulate()</tt>
+     * implementation with <tt>size</tt> set to <tt>bitmap->getSize()</tt>
+     * and <tt>sourceOffset</tt> and <tt>targetOffset</tt>tt> set to zero.
+     * Out-of-bounds regions are ignored. It is assumed
+     * that <tt>bitmap != this</tt>.
+     *
+     * \remark This function throws an exception when the bitmaps
+     * use different component formats or channels, or when the
+     * component format is \ref EBitmask.
+     */
+    inline void substract(const Bitmap *bitmap) {
+        substract(bitmap, Point2i(0), Point2i(0), bitmap->getSize());
+    }
+
     /**
      * \brief Accumulate the contents of another bitmap into the
      * region with the specified offset

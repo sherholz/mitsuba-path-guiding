@@ -392,6 +392,11 @@ public:
         m_storage->put(block);
     }
 
+    ImageBlock *getStorage()
+    {
+        return m_storage.get();
+    }
+
     void setBitmap(const Bitmap *bitmap, Float multiplier) {
         bitmap->convert(m_storage->getBitmap(), multiplier);
     }

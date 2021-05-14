@@ -705,6 +705,84 @@ void Bitmap::accumulate(const Bitmap *bitmap, Point2i sourceOffset,
     }
 }
 
+void Bitmap::substract(const Bitmap *bitmap, Point2i sourceOffset,
+        Point2i targetOffset, Vector2i size) {
+    Assert(getPixelFormat() == bitmap->getPixelFormat() &&
+           getComponentFormat() == bitmap->getComponentFormat() &&
+           getChannelCount() == bitmap->getChannelCount());
+
+    Vector2i offsetIncrease(
+        std::max(0, std::max(-sourceOffset.x, -targetOffset.x)),
+        std::max(0, std::max(-sourceOffset.y, -targetOffset.y))
+    );
+
+    sourceOffset += offsetIncrease;
+    targetOffset += offsetIncrease;
+    size -= offsetIncrease;
+
+    Vector2i sizeDecrease(
+        std::max(0, std::max(sourceOffset.x + size.x - bitmap->getWidth(), targetOffset.x + size.x - getWidth())),
+        std::max(0, std::max(sourceOffset.y + size.y - bitmap->getHeight(), targetOffset.y + size.y - getHeight())));
+
+    size -= sizeDecrease;
+
+    if (size.x <= 0 || size.y <= 0)
+        return;
+
+    const size_t
+        columns      = (size_t) size.x * m_channelCount,
+        pixelStride  = getBytesPerPixel(),
+        sourceStride = bitmap->getWidth() * pixelStride,
+        targetStride = getWidth() * pixelStride;
+
+    const uint8_t *source = bitmap->getUInt8Data() +
+        (sourceOffset.x + sourceOffset.y * (size_t) bitmap->getWidth()) * pixelStride;
+
+    uint8_t *target = m_data +
+        (targetOffset.x + targetOffset.y * (size_t) m_size.x) * pixelStride;
+
+    for (int y = 0; y < size.y; ++y) {
+        switch (m_componentFormat) {
+            case EUInt8:
+                for (size_t i = 0; i < columns; ++i)
+                    ((uint8_t *) target)[i] = (uint8_t) std::min(0xFF, ((uint8_t *) source)[i] - ((uint8_t *) target)[i]);
+
+                break;
+
+            case EUInt16:
+                for (size_t i = 0; i < columns; ++i)
+                    ((uint16_t *) target)[i] = (uint16_t) std::min(0xFFFF, ((uint16_t *) source)[i] - ((uint16_t *) target)[i]);
+                break;
+
+            case EUInt32:
+                for (size_t i = 0; i < columns; ++i)
+                    ((uint32_t *) target)[i] = std::min((uint32_t) 0xFFFFFFFFUL, ((uint32_t *) source)[i] - ((uint32_t *) target)[i]);
+                break;
+
+            case EFloat16:
+                for (size_t i = 0; i < columns; ++i)
+                    ((half *) target)[i] -= ((half *) source)[i];
+                break;
+
+            case EFloat32:
+                for (size_t i = 0; i < columns; ++i)
+                    ((float *) target)[i] -= ((float *) source)[i];
+                break;
+
+            case EFloat64:
+                for (size_t i = 0; i < columns; ++i)
+                    ((double *) target)[i] -= ((double *) source)[i];
+                break;
+
+            default:
+                Log(EError, "Unknown component format!");
+        }
+
+        source += sourceStride;
+        target += targetStride;
+    }
+}
+
 Spectrum Bitmap::average() const {
     if (m_gamma != 1 || (m_componentFormat != EFloat16 &&
                 m_componentFormat != EFloat32 && m_componentFormat != EFloat64))

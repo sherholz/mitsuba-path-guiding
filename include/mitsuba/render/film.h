@@ -48,6 +48,8 @@ public:
     /// Clear the film
     virtual void clear() = 0;
 
+    virtual ImageBlock *getStorage() {return nullptr;}
+
     /// Merge an image block into the film
     virtual void put(const ImageBlock *block) = 0;
 
