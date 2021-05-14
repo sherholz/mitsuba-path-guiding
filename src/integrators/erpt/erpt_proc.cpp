@@ -24,10 +24,12 @@
 #include <mitsuba/bidir/pathsampler.h>
 #include <mitsuba/bidir/util.h>
 #include <mitsuba/core/sfcurve.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include "erpt_proc.h"
 
 //#define MTS_BD_DEBUG_HEAVY
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

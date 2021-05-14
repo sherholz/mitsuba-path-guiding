@@ -22,7 +22,7 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/core/sse.h>
 #include <mitsuba/core/frame.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <stdarg.h>
 #include <iomanip>
 #include <errno.h>
@@ -73,6 +73,8 @@ inline void disable_fpexcept_sse() {
 } // namespace
 
 #endif
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

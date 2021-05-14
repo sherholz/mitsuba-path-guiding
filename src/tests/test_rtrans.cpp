@@ -20,8 +20,10 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/plugin.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include "../bsdfs/rtrans.h"
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

@@ -21,7 +21,9 @@
 #include <mitsuba/bidir/util.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/plugin.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

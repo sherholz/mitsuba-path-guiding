@@ -18,7 +18,9 @@
 
 #include <mitsuba/core/quad.h>
 #include <boost/filesystem/fstream.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

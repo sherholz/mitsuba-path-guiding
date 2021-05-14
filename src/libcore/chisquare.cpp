@@ -20,9 +20,11 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/core/timer.h>
 #include <boost/math/distributions/chi_squared.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <set>
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

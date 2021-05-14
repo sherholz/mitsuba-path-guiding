@@ -19,7 +19,9 @@
 #include <mitsuba/core/vmf.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/core/brent.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

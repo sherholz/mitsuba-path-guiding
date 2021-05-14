@@ -21,7 +21,7 @@
 #include <mitsuba/core/chisquare.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/render/testcase.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 /* Statistical significance level of the test. Set to
    1/4 percent by default -- we want there to be strong
@@ -36,6 +36,8 @@
 #else
     #define ERROR_REQ 1e-5
 #endif
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

@@ -21,8 +21,10 @@
 
 #include <mitsuba/core/statistics.h>
 #include <mitsuba/core/brent.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/math/special_functions/erf.hpp>
+
+using namespace boost::placeholders;
 
 MTS_NAMESPACE_BEGIN
 

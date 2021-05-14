@@ -20,7 +20,7 @@
 #include <mitsuba/core/quad.h>
 #include <mitsuba/core/fstream.h>
 #include <mitsuba/core/plugin.h>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <fstream>
 #include <iomanip>
 #include <omp.h>
