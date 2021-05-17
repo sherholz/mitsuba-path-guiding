@@ -12,7 +12,9 @@ doc/plugins_generated.tex
 # Build-related
 .sconf_temp
 build/release
+build/Release
 build/debug
+build/Debug
 debian
 .sconsign.dblite
 config.py
