@@ -121,6 +121,15 @@ public:
     ProgressiveMIPathTracer(Stream *stream, InstanceManager *manager)
         : ProgressiveMonteCarloIntegrator(stream, manager) { }
 
+    void postprocess(const Scene *scene, RenderQueue *queue,
+        const RenderJob *job, int sceneResID, int sensorResID,
+        int samplerResID){
+        SLog(EInfo, "Avg. path length: %f (%d/%d)", 
+            (float)avgPathLength.getValue()/(float)avgPathLength.getBase(), 
+            avgPathLength.getValue(),
+            avgPathLength.getBase());
+    }
+
     Spectrum Li(const RayDifferential &r, RadianceQueryRecord &rRec) const {
         /* Some aliases and local variables */
         const Scene *scene = rRec.scene;
