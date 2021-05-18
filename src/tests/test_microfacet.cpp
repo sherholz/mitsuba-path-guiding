@@ -24,6 +24,8 @@
 #include <boost/bind/bind.hpp>
 #include "../bsdfs/microfacet.h"
 
+using namespace boost::placeholders;
+
 /* Statistical significance level of the test. Set to
    1/4 percent by default -- we want there to be strong
    evidence of an implementaiton error before failing
