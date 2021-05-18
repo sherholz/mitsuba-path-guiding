@@ -343,6 +343,11 @@ macro (add_mts_plugin _plugin_name)
   SET_OUTPATH_CFG (${_plugin_name} LIBRARY_OUTPUT_DIRECTORY
     "${PROJECT_BINARY_DIR}/binaries/@CFGNAME@/${MTS_PLUGIN_DEST}"
   )
+  set_target_properties(${_plugin_name}
+  PROPERTIES
+      INSTALL_RPATH "$ORIGIN/.."
+      BUILD_WITH_INSTALL_RPATH ON)
+  
   mts_target_ltcg (${_plugin_name})
   mts_msvc_mp (${_plugin_name})
   install(TARGETS ${_plugin_name}
