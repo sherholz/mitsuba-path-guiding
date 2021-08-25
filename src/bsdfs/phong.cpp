@@ -136,6 +136,10 @@ public:
         return Vector(-wi.x, -wi.y, wi.z);
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return m_diffuseReflectance->eval(its) + m_specularReflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         if (Frame::cosTheta(bRec.wi) <= 0 ||
             Frame::cosTheta(bRec.wo) <= 0 || measure != ESolidAngle)

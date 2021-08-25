@@ -188,6 +188,10 @@ public:
         return albedo; /* Very approximate .. */
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return getDiffuseReflectance(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         Spectrum sigmaA = m_sigmaA->eval(bRec.its),
                  sigmaS = m_sigmaS->eval(bRec.its),

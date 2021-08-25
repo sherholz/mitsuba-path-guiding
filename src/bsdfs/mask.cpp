@@ -110,6 +110,10 @@ public:
         BSDF::configure();
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        m_nestedBSDF->getAlbedo(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         Spectrum opacity = m_opacity->eval(bRec.its);
 

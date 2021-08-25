@@ -125,6 +125,10 @@ public:
         return m_reflectance->eval(its);
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return m_reflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         if (!(bRec.typeMask & EGlossyReflection) || measure != ESolidAngle
             || Frame::cosTheta(bRec.wi) <= 0

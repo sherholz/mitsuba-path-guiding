@@ -106,6 +106,14 @@ public:
                 "a transmission component can be nested!");
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        if (its.wi.z > 0) {
+            return m_nestedBRDF[0]->getAlbedo(its);
+        } else {
+            return m_nestedBRDF[1]->getAlbedo(its);
+        }
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         BSDFSamplingRecord b(bRec);
 

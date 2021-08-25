@@ -333,6 +333,11 @@ public:
         }
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        // TODO account for coating layer
+        return m_nested->getAlbedo(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool hasNested = (bRec.typeMask & m_nested->getType() & BSDF::EAll)
             && (bRec.component == -1 || bRec.component < (int) m_components.size()-1);

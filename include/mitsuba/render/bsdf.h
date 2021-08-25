@@ -358,6 +358,10 @@ public:
         return Spectrum(0.0f);
     }
 
+    virtual Spectrum getAlbedo(const Intersection &its) const {
+        return Spectrum(0.f);
+    }
+
     virtual Float getGlossySamplingRate(const BSDFSamplingRecord &bRec) const {
         if ((m_combinedType&EAll&~EGlossy) == 0)
             return 1.0f;

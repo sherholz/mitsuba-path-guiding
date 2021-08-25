@@ -132,6 +132,13 @@ public:
         BSDF::configure();
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = std::min((Float) 1.0f, std::max((Float) 0.0f,
+            m_weight->eval(its).average()));
+        return m_bsdfs[0]->getAlbedo(its) * (1-weight) +
+               m_bsdfs[1]->getAlbedo(its) * weight;
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         Float weight = std::min((Float) 1.0f, std::max((Float) 0.0f,
             m_weight->eval(bRec.its).average()));

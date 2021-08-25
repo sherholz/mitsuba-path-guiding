@@ -150,6 +150,11 @@ public:
         return -wi;
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = 0.5f;
+        return weight * m_specularReflectance->eval(its) + (1 - weight) * m_specularTransmittance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool sampleReflection   = (bRec.typeMask & EDeltaReflection)
                 && (bRec.component == -1 || bRec.component == 0) && measure == EDiscrete;

@@ -261,6 +261,10 @@ public:
                 * m_specularReflectance->eval(its);
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return m_specularReflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         /* Stop if this component was not requested */
         if (measure != ESolidAngle ||

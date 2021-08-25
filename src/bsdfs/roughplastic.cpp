@@ -351,6 +351,11 @@ public:
         return 2 * dot(wi, m) * Vector(m) - wi;
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = 0.5f;
+        return weight * m_specularReflectance->eval(its) + (1 - weight) * m_diffuseReflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool hasSpecular = (bRec.typeMask & EGlossyReflection) &&
             (bRec.component == -1 || bRec.component == 0);

@@ -272,6 +272,11 @@ public:
         return Vector(m_eta*wi.x, m_eta*wi.y, -math::signum(Frame::cosTheta(wi)) * cosThetaT);
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        // TODO account for coating layer
+        return m_nested->getAlbedo(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool sampleSpecular = (bRec.typeMask & EDeltaReflection)
             && (bRec.component == -1 || bRec.component == (int) m_components.size()-1);

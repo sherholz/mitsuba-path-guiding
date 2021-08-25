@@ -73,6 +73,10 @@ public:
         BSDF::configure();
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return m_transmittance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         if (!(bRec.typeMask & EDiffuseTransmission) || measure != ESolidAngle
             || Frame::cosTheta(bRec.wi) * Frame::cosTheta(bRec.wo) >= 0)

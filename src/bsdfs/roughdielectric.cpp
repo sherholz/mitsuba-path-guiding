@@ -269,6 +269,11 @@ public:
         BSDF::configure();
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = 0.5f;
+        return weight * m_specularReflectance->eval(its) + (1 - weight) * m_specularTransmittance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         if (measure != ESolidAngle || Frame::cosTheta(bRec.wi) == 0)
             return Spectrum(0.0f);

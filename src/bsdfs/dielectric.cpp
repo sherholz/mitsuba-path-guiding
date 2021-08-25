@@ -227,6 +227,11 @@ public:
         return Vector(scale*wi.x, scale*wi.y, cosThetaT);
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = 0.5f; // TODO average fresnel?
+        return weight * m_specularTransmittance->eval(its) + (1 - weight) * m_specularReflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool sampleReflection   = (bRec.typeMask & EDeltaReflection)
                 && (bRec.component == -1 || bRec.component == 0) && measure == EDiscrete;

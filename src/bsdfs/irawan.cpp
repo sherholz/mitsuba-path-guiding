@@ -185,6 +185,9 @@ public:
         return yarn.kd;
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        return getDiffuseReflectance(its);
+    }
 
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         bool hasSpecular = (bRec.typeMask & EGlossyReflection) &&

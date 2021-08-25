@@ -192,6 +192,11 @@ public:
         return m_specularSamplingWeight;
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Float weight = 0.5f;
+        return weight * m_specularReflectance->eval(its) + (1 - weight) * m_diffuseReflectance->eval(its);
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         if (Frame::cosTheta(bRec.wi) <= 0 ||
             Frame::cosTheta(bRec.wo) <= 0 || measure != ESolidAngle)

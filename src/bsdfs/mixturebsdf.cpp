@@ -171,6 +171,13 @@ public:
         BSDF::configure();
     }
 
+    Spectrum getAlbedo(const Intersection &its) const {
+        Spectrum result;
+        for (size_t i = 0; i < m_bsdfs.size(); ++i)
+            result += m_bsdfs[i]->getAlbedo(its) * m_weights[i];
+        return result;
+    }
+
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
         Spectrum result(0.0f);
 
