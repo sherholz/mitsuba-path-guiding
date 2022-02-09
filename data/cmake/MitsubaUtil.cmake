@@ -234,6 +234,12 @@ macro (add_mts_corelib _corelib_name)
   SET_OUTPATH_CFG (${_corelib_name} ${_corelib_property_suffix}
     "${PROJECT_BINARY_DIR}/binaries/@CFGNAME@/${MTS_LIB_DEST}"
   )
+
+  set_target_properties(${_corelib_name}
+  PROPERTIES
+      INSTALL_RPATH "$ORIGIN/lib"
+      BUILD_WITH_INSTALL_RPATH ON)
+
   mts_target_ltcg (${_corelib_name})
   mts_msvc_mp (${_corelib_name})
   install(TARGETS ${_corelib_name}
@@ -345,7 +351,7 @@ macro (add_mts_plugin _plugin_name)
   )
   set_target_properties(${_plugin_name}
   PROPERTIES
-      INSTALL_RPATH "$ORIGIN/.."
+      INSTALL_RPATH "$ORIGIN/..:$ORIGIN/lib:$ORIGIN/../lib"
       BUILD_WITH_INSTALL_RPATH ON)
   
   mts_target_ltcg (${_plugin_name})

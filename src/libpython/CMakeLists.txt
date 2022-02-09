@@ -62,7 +62,7 @@ endif()
 
 set_target_properties(PyMitsuba
 PROPERTIES
-    INSTALL_RPATH "$ORIGIN/../.."
+    INSTALL_RPATH "$ORIGIN/../..:$ORIGIN/../../lib"
     BUILD_WITH_INSTALL_RPATH ON)
 
 install(TARGETS PyMitsuba
