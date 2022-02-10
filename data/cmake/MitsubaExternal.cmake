@@ -155,10 +155,9 @@ add_definitions(${PNG_DEFINITIONS})
 if(MTS_CLUSTER_COMPILATION)
 	# No OpenEXR for now
 else(MTS_CLUSTER_COMPILATION)
-find_package(IlmBase)
 find_package(OpenEXR)
 if (OPENEXR_FOUND AND WIN32)
-  set(CMAKE_REQUIRED_INCLUDES ${ILMBASE_INCLUDE_DIRS} ${OPENEXR_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_INCLUDES ${OPENEXR_INCLUDE_DIR}/OpenEXR)
   set(CMAKE_REQUIRED_LIBRARIES ${ILMBASE_LIBRARIES} ${OPENEXR_LIBRARIES})
 
   CHECK_CXX_SOURCE_COMPILES("
@@ -285,7 +284,7 @@ include_directories(${Boost_INCLUDE_DIRS} ${Eigen_INCLUDE_DIR})
 
 # If we are using the system OpenEXR, add its headers which half.h requires
 if (OPENEXR_FOUND)
-  include_directories(${ILMBASE_INCLUDE_DIRS})
+  include_directories(${OPENEXR_INCLUDE_DIR}/OpenEXR)
 endif()
 
 # Image format definitions
