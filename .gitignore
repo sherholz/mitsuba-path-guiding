@@ -33,6 +33,8 @@ build/data
 build/CMakeFiles
 build/rules.ninja
 build/install_manifest.txt
+build*
+
 
 # VSCode-related
 .vscode
