@@ -75,7 +75,7 @@ public:
     }
 
     void generate(const Point2i &p) {
-        m_seed = (static_cast<uint64_t>(p.x)+(static_cast<uint64_t>(p.y)<<16))*(m_sampleCount+m_salt);
+        m_seed = (static_cast<uint64_t>(p.x)+(static_cast<uint64_t>(p.y)<<16))*(m_salt);
         m_random->seed(m_seed);
 
         for (size_t i=0; i<m_req1D.size(); i++)
