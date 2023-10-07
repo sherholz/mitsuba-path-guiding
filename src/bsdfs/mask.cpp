@@ -111,7 +111,7 @@ public:
     }
 
     Spectrum getAlbedo(const Intersection &its) const {
-        m_nestedBSDF->getAlbedo(its);
+        return m_nestedBSDF->getAlbedo(its);
     }
 
     Spectrum eval(const BSDFSamplingRecord &bRec, EMeasure measure) const {
