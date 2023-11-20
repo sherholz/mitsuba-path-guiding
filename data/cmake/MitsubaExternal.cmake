@@ -60,7 +60,7 @@ endif()
 #find_package(Qt4 COMPONENTS
 #  QtCore QtGui QtXml QtXmlPatterns QtNetwork QtOpenGL)
 # Qt5 NOT Optional
-find_package(Qt5 COMPONENTS Core Gui Xml XmlPatterns Network OpenGL Widgets REQUIRED)
+find_package(Qt5 COMPONENTS Core Gui Xml XmlPatterns Network OpenGL Widgets)
 
 CMAKE_DEPENDENT_OPTION(BUILD_GUI "Built the Qt5-based mitsuba GUI." ON "Qt5Core_FOUND" OFF)
   

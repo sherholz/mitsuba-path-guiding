@@ -131,7 +131,7 @@ if (MTS_NOSHADINGNORMAL)
 endif()
 
 # If we want treat index-matheched (NullBSDF) intersections or not
-option(MTS_IGNORE_NULLBSDF_INTERSECTIONS "Ignore indexed-mathched (NullBSDF) intersections" IN)
+option(MTS_IGNORE_NULLBSDF_INTERSECTIONS "Ignore indexed-mathched (NullBSDF) intersections" ON)
 if (MTS_IGNORE_NULLBSDF_INTERSECTIONS)
   add_definitions(-DMTS_IGNORE_NULLBSDF_INTERSECTIONS)
 endif()
