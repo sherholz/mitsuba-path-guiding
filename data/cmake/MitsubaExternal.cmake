@@ -99,9 +99,9 @@ int main (int argc, char **argv) {
 # existence to get a soft failure
 if ((APPLE OR WIN32) AND MTS_DEPENDENCIES)
   set(mts_boost_python_names boost_python boost_python27
-    boost_python32 boost_python33 boost_python36 boost_python37 boost_python38 boost_python)
+    boost_python32 boost_python33 boost_python36 boost_python37 boost_python38 boost_python39 boost_python310 boost_python)
 else()
-  set(mts_boost_python_names boost_python36 boost_python37 boost_python38 boost_python)
+  set(mts_boost_python_names boost_python36 boost_python37 boost_python38 boost_python39 boost_python310 boost_python)
 endif()
 find_library (mts_boost_python_lib NAMES ${mts_boost_python_names}
               HINTS ${Boost_LIBRARY_DIRS} NO_DEFAULT_PATH)
