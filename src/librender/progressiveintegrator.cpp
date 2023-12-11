@@ -26,7 +26,7 @@ MTS_NAMESPACE_BEGIN
 
 		Sampler *samplerRendering   = static_cast<Sampler *>(sched->getResource(samplerResID, 0));
 		m_spp = samplerRendering->getSampleCount();
-		if ( m_maxTime > 0.f &&
+		if ( m_maxRenderTime > 0.f &&
 			 samplerRendering->toString().find( "IndependentSampler" ) == std::string::npos ) {
 			Log( EError, "Rendering limited by time supports only an independent sampler!" );
 		}
@@ -60,7 +60,7 @@ MTS_NAMESPACE_BEGIN
 
 		const int processBatchSize = 1;
 
-		int numPasses = m_spp/m_passSPP;
+		int numPasses = m_spp/m_samplesPerProgression;
 		int numBatches = std::ceil((Float)numPasses/(Float)processBatchSize);
 
 		//const int processBatchSize = 128;
@@ -91,7 +91,7 @@ MTS_NAMESPACE_BEGIN
 
 			for (int j = 0; j < tmpPasses; ++j) {
 				sched->wait(m_renderProcesses[j]);
-				sppCount += m_passSPP;
+				sppCount += m_samplesPerProgression;
 			}
 			postprogression(queue, job, sceneResID, sensorResID, samplerResID);
 			if (m_cancel)
@@ -139,8 +139,8 @@ MTS_NAMESPACE_BEGIN
 
 			for (size_t j = 0; j < processBatchSize; ++j) {
 				sched->wait(m_renderProcesses[j]);
-				sppCount += m_passSPP;
-				if(renderingTimer->getSeconds() >= m_maxTime){
+				sppCount += m_samplesPerProgression;
+				if(renderingTimer->getSeconds() >= m_maxRenderTime){
 					sched->pause();
                     //sched->stop();
 					timeIsUp = true;
@@ -183,9 +183,9 @@ MTS_NAMESPACE_BEGIN
 		size_t sampleCount = sampler->getSampleCount();
 
 
-		const size_t iterations     = (m_maxTime > 0.f) ? 1e5 : sampler->getSampleCount();
+		const size_t iterations     = (m_maxRenderTime > 0.f) ? 1e5 : sampler->getSampleCount();
 
-        if ( m_maxTime > 0.f &&
+        if ( m_maxRenderTime > 0.f &&
         		sampler->toString().find( "IndependentSampler" ) == std::string::npos ) {
             Log( EError, "Rendering limited by time supports only an independent sampler!" );
         }
@@ -195,7 +195,7 @@ MTS_NAMESPACE_BEGIN
 		Log(EInfo, "Starting render job (%ix%i, " SIZE_T_FMT " %s, " SIZE_T_FMT
 			" %s, %s %f " SSE_STR ") ..", film->getCropSize().x, film->getCropSize().y,
 			sampleCount, sampleCount == 1 ? "sample" : "samples", nCores,
-			nCores == 1 ? "core" : "cores", "time: ", m_maxTime);
+			nCores == 1 ? "core" : "cores", "time: ", m_maxRenderTime);
 
 		Thread::initializeOpenMP(nCores);
 
@@ -205,7 +205,7 @@ MTS_NAMESPACE_BEGIN
 
 
 		renderingTimer->reset();
-		if(m_maxTime > 0){
+		if(m_maxRenderTime > 0){
 			m_spp = renderTime(sched, scene, queue,job,sceneResID,sensorResID,samplerResID, integratorResID);
 		}else{
 			m_spp = renderSamples(sched, scene, queue,job,sceneResID,sensorResID,samplerResID, integratorResID);
@@ -233,7 +233,7 @@ MTS_NAMESPACE_BEGIN
 		ref<Sampler> rSampler = sampler;
 
 		Float diffScaleFactor = 1.0f /
-			std::sqrt((Float) m_passSPP);
+			std::sqrt((Float) m_samplesPerProgression);
 		bool needsApertureSample = sensor->needsApertureSample();
 		bool needsTimeSample = sensor->needsTimeSample();
 
@@ -257,7 +257,7 @@ MTS_NAMESPACE_BEGIN
 
 			RadianceQueryRecord rRec(scene, rSampler);
 
-			for (int j = 0; j< m_passSPP; j++) {
+			for (int j = 0; j< m_samplesPerProgression; j++) {
 
 				if (stop)
 					break;
@@ -288,7 +288,7 @@ MTS_NAMESPACE_BEGIN
 		std::ostringstream oss;
 		oss << "Progressive[" << endl
 
-			<< "  maxTime = " << m_maxTime << "," << endl
+			<< "  maxRenderTime = " << m_maxRenderTime << "," << endl
             << "  spp = " << m_spp << "," << endl
 			//<< "  subIntegrator = " << indent(m_subIntegrator->toString()) << endl
 			<< "]";
@@ -297,8 +297,8 @@ MTS_NAMESPACE_BEGIN
 
      /// Create a integrator
      ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(const Properties &props):MonteCarloIntegrator(props){
-         m_passSPP = props.getInteger("progressiveMC.passSPP", 1);
-         m_maxTime = props.getInteger("progressiveMC.maxTime", 0);
+         m_samplesPerProgression = props.getInteger("samplesPerProgression", 1);
+         m_maxRenderTime = props.getInteger("maxRenderTime", 0);
      }
      /// Unserialize an integrator
      ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(Stream *stream, InstanceManager *manager):MonteCarloIntegrator(stream,manager){
@@ -315,7 +315,7 @@ MTS_NAMESPACE_BEGIN
 
 	void ProgressiveMonteCarloIntegrator::postprogression(RenderQueue *queue, const RenderJob *job,
 			int sceneResID, int sensorResID, int samplerResID) {
-		Log( EInfo, "Progression[%d]: %d spp took %fs", m_progressionCounter, m_passSPP, m_progressionTimer->getMilliseconds() * 1e-3f );
+		Log( EInfo, "Progression[%d]: %d spp took %fs", m_progressionCounter, m_samplesPerProgression, m_progressionTimer->getMilliseconds() * 1e-3f );
 	}
 
     void ProgressiveMonteCarloIntegrator::cancel() {

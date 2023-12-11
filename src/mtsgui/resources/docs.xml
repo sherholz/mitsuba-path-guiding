@@ -48,8 +48,14 @@
     </plugin>
 
     <plugin type="integrator" className="ProgressiveMonteCarloIntegrator" abstract="true" extends="MonteCarloIntegrator">
-        <shortDescr>Base class of all sampling-based integrators</shortDescr>
-        <descr>Base class of all sampling-based integrators</descr>
+        <shortDescr>Base class of all progressive sampling-based integrators</shortDescr>
+        <descr>Base class of all progressive sampling-based integrators</descr>
+        <param name="samplesPerProgression" readableName="Samples per progression" type="integer" default="1" importance="1">
+            Number of samples per pixel rendered per progression.
+        </param>
+        <param name="maxRenderTime" readableName="Render time" type="integer" default="0" importance="1">
+            Time budget for rendering the scene in seconds. If set to zero the number of samples per pixel from the Sampler are used. 
+        </param>
     </plugin>
 
     <plugin type="integrator" name="irrcache" readableName="Irradiance cache"

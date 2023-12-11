@@ -57,7 +57,7 @@ class MTS_EXPORT_RENDER ProgressiveMonteCarloIntegrator : public MonteCarloInteg
 protected:
 
     /// Given time to render the image
-    Float m_maxTime;
+    Float m_maxRenderTime;
     //ir::ImageBuffer * m_imageBuffer;
     ref<Timer> m_timer;
 
@@ -71,7 +71,7 @@ protected:
     //int m_iterations;
 
     int m_spp;
-    int m_passSPP;
+    int m_samplesPerProgression;
 
     std::vector<ref<Sampler>> m_samplers;
     Vector2i m_filmSize;
