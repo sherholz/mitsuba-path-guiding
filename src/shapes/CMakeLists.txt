@@ -21,6 +21,6 @@ add_shape(shapegroup shapegroup.h shapegroup.cpp)
 add_shape(instance   instance.h instance.cpp)
 add_shape(heightfield heightfield.cpp)
 #add_shape(deformable deformable.cpp)
-#add_shape(ply ply.cpp ply/ply_parser.cpp
-#  ply/byte_order.hpp ply/config.hpp ply/io_operators.hpp
-#  ply/ply.hpp ply/ply_parser.hpp)
+add_shape(ply ply.cpp ply/ply_parser.cpp
+  ply/byte_order.hpp ply/config.hpp ply/io_operators.hpp
+  ply/ply.hpp ply/ply_parser.hpp)
