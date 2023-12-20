@@ -27,8 +27,9 @@ MTS_NAMESPACE_BEGIN
 		Sampler *samplerRendering   = static_cast<Sampler *>(sched->getResource(samplerResID, 0));
 		m_spp = samplerRendering->getSampleCount();
 		if ( m_maxRenderTime > 0.f &&
-			 samplerRendering->toString().find( "IndependentSampler" ) == std::string::npos ) {
-			Log( EError, "Rendering limited by time supports only an independent sampler!" );
+			 samplerRendering->toString().find( "IndependentSampler" ) == std::string::npos &&
+			 samplerRendering->toString().find( "DeterministicSampler" ) == std::string::npos ) {
+			Log( EError, "Rendering limited by time supports only an independent or deterministic sampler!");
 		}
 
 		/// Allocate pixels
@@ -36,9 +37,10 @@ MTS_NAMESPACE_BEGIN
 		miscTimer->reset();
 		m_filmSize = film->getSize();
 		Log( EInfo, "Film Size: %d \t %d", m_filmSize[0], m_filmSize[1] );
-		m_samplers.resize(m_filmSize[0]*m_filmSize[1]);
+		auto numPixels = m_filmSize[0]*m_filmSize[1];
+		m_samplers.resize(numPixels);
 		#pragma omp parallel for
-		for (int index = 0; index < m_filmSize[0]*m_filmSize[1]; index++){
+		for (int index = 0; index < numPixels; index++){
 			Point2i pix;
 			pix.y = index/m_filmSize[0];
 			pix.x = index % m_filmSize[0];
@@ -149,17 +151,9 @@ MTS_NAMESPACE_BEGIN
 			}
 
 			if(timeIsUp){
-
 				this->cancel();
 				sched->start();
-			
-                //for (size_t j = 0; j < processBatchSize; ++j) {
-                //    sched->wait(m_renderProcesses[j]);
-                //}
-
 			}
-
-			//m_renderProcesses.clear();
         }
 
 		return sppCount;
@@ -185,10 +179,11 @@ MTS_NAMESPACE_BEGIN
 
 		const size_t iterations     = (m_maxRenderTime > 0.f) ? 1e5 : sampler->getSampleCount();
 
-        if ( m_maxRenderTime > 0.f &&
-        		sampler->toString().find( "IndependentSampler" ) == std::string::npos ) {
-            Log( EError, "Rendering limited by time supports only an independent sampler!" );
-        }
+		if ( m_maxRenderTime > 0.f &&
+			 sampler->toString().find( "IndependentSampler" ) == std::string::npos &&
+			 sampler->toString().find( "DeterministicSampler" ) == std::string::npos ) {
+			Log( EError, "Rendering limited by time supports only an independent or deterministic sampler!");
+		}
 
 
 
@@ -203,7 +198,6 @@ MTS_NAMESPACE_BEGIN
 		//This is a sampling-based integrator - parallelize 
 		int integratorResID = sched->registerResource(this);
 
-
 		renderingTimer->reset();
 		if(m_maxRenderTime > 0){
 			m_spp = renderTime(sched, scene, queue,job,sceneResID,sensorResID,samplerResID, integratorResID);
@@ -212,16 +206,12 @@ MTS_NAMESPACE_BEGIN
 		}
 		 m_renderTime = renderingTimer->getMilliseconds() * 1e-3f ;
 
-		//m_process = proc;
-		//sched->wait(proc);
-		//m_process = NULL;
 		sched->unregisterResource(integratorResID);
 
         Log(EInfo, "Rendered samples: %d", m_spp);
 
-		//return proc->getReturnStatus() == ParallelProcess::ESuccess;
 		return true;
-/**/
+
 	}
 
 
@@ -277,7 +267,10 @@ MTS_NAMESPACE_BEGIN
 				sensorRay.scaleDifferential(diffScaleFactor);
 
 				spec *= this->Li(sensorRay, rRec);
-
+				float maxSpec = spec.max();
+				if (maxSpec > m_maxComponentValue) {
+					spec *= m_maxComponentValue / maxSpec;
+				}
 				block->put(samplePos, spec, rRec.alpha);
 				rSampler->advance();
 			}
@@ -296,9 +289,10 @@ MTS_NAMESPACE_BEGIN
 	}
 
      /// Create a integrator
-     ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(const Properties &props):MonteCarloIntegrator(props){
-         m_samplesPerProgression = props.getInteger("samplesPerProgression", 1);
-         m_maxRenderTime = props.getInteger("maxRenderTime", 0);
+     ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(const Properties &props):MonteCarloIntegrator(props){ 
+		m_samplesPerProgression = props.getInteger("samplesPerProgression", 1);
+        m_maxRenderTime = props.getInteger("maxRenderTime", 0);
+		m_maxComponentValue = props.getFloat("maxComponentValue", std::numeric_limits<float>::infinity());
      }
      /// Unserialize an integrator
      ProgressiveMonteCarloIntegrator::ProgressiveMonteCarloIntegrator(Stream *stream, InstanceManager *manager):MonteCarloIntegrator(stream,manager){

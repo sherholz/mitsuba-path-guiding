@@ -77,6 +77,8 @@ protected:
     Vector2i m_filmSize;
 
     std::vector<ref<BlockedRenderProcess>> m_renderProcesses;
+
+    float m_maxComponentValue {std::numeric_limits<float>::infinity()};
 };
 
 
