@@ -133,6 +133,15 @@ if (BUILD_OIDN)
 endif()
 
 
+## ======================================================================== ##
+## Build OpenPGL
+## ======================================================================== ##
+
+option(BUILD_OPENPGL "Build OpenPGL as a part of the superbuild." ON)
+if (BUILD_OPENPGL)
+    include(dep_openpgl)
+endif()
+
 
 ## ======================================================================== ##
 ## Build Mitsuba
@@ -207,6 +216,7 @@ endif()
     $<$<BOOL:${BUILD_DEPENDENCIES}>:blosc>
     $<$<BOOL:${BUILD_DEPENDENCIES}>:openvdb>
     $<$<BOOL:${BUILD_OPENEXR}>:openexr>
+    $<$<BOOL:${BUILD_OPENPGL}>:openpgl>
     $<$<BOOL:${BUILD_TBB}>:tbb>
     $<$<BOOL:${BUILD_OIDN}>:oidn>
   )
