@@ -56,6 +56,36 @@ macro(add_to_prefix_path PATH)
 endmacro()
 
 ## ======================================================================== ##
+## Build TBB
+## ======================================================================== ##
+
+option(BUILD_TBB "Build Intel Threading Building Blocks or search in environment?" ON)
+if (BUILD_TBB)
+  set(TBB_VERSION "2021.5.0" CACHE STRING "TBB version to download")
+  if (TBB_VERSION VERSION_LESS 2021)
+    set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}")
+  else()
+    set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}")
+  endif()
+  if (APPLE)
+    set(_TBB_URL "${TBB_BASE_URL}-mac.tgz")
+    set(_TBB_HASH "1356e744c29763ee0a6de06647954eb076798c0b7a5b3c1008108d1d76cd42a5")
+    set(TBB_LIB_SUBDIR "")
+  elseif(WIN32)
+    set(_TBB_URL "${TBB_BASE_URL}-win.zip")
+    set(_TBB_HASH "90e2055cd4be55f79eedd3d50b2010bf05d1739309c4cdd219192d129e931093")
+    set(TBB_LIB_SUBDIR "intel64/vc14")
+  else()
+    set(_TBB_URL "${TBB_BASE_URL}-lin.tgz")
+    set(_TBB_HASH "74861b1586d6936b620cdab6775175de46ad8b0b36fa6438135ecfb8fb5bdf98")
+    set(TBB_LIB_SUBDIR "intel64/gcc4.8")
+  endif()
+  set(TBB_URL "${_TBB_URL}" CACHE STRING "URL of the TBB archive.")
+  set(TBB_HASH "${_TBB_HASH}" CACHE STRING "SHA256 hash of the TBB archive.")
+  include(dep_tbb)
+endif()
+
+## ======================================================================== ##
 ## Build OpenEXR
 ## ======================================================================== ##
 
