@@ -343,6 +343,10 @@ Float AbstractEmitter_pdfDirect(AbstractEmitter *emitter, DirectSamplingRecord &
     return pdf;
 }
 
+static const BSDF* getBSDF(Intersection* its, const RayDifferential &ray) {
+    return its->getBSDF(ray);
+}
+
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(getBitmap_overloads, getBitmap, 0, 1)
 
 void export_render() {
