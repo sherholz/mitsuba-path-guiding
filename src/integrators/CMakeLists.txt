@@ -49,3 +49,19 @@ add_bidir(mlt mlt/mlt.h mlt/mlt.cpp
 
 add_bidir(erpt erpt/erpt.h erpt/erpt.cpp
         erpt/erpt_proc.h erpt/erpt_proc.cpp)
+
+# Guided path tracers
+FIND_PACKAGE(openpgl 0.4.0 REQUIRED)
+include_directories(openpgl::openpgl)
+
+FIND_PACKAGE(TBB REQUIRED)
+include_directories(TBB::tbb)
+
+add_integrator(guidedprogressivepath guiding/progressive_guidedpath.cpp)
+target_link_libraries(guidedprogressivepath openpgl::openpgl)
+target_link_libraries(guidedprogressivepath TBB::tbb)
+
+
+add_integrator(guidedprogressivevolpath guiding/progressive_guidedvolpath.cpp)
+target_link_libraries(guidedprogressivevolpath openpgl::openpgl)
+target_link_libraries(guidedprogressivevolpath TBB::tbb)
