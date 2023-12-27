@@ -315,6 +315,9 @@ public:
      * For a light path this id is set to -1.
      */
     int pixelId;
+
+    Spectrum primaryAlbedo;
+    Vector3 primaryNormal;
 };
 
 /** \brief Abstract base class, which describes integrators
