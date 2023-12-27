@@ -5,7 +5,30 @@
 
 #include <mitsuba/render/integrator.h>
 
+#include <OpenImageDenoise/oidn.hpp>
+#include <limits>
+
 MTS_NAMESPACE_BEGIN
+struct DenoiseBuffer {
+
+    void init(const Vector2i filmSize);
+    void denoise();
+    void storeBuffers(std::string filename);
+
+    std::unique_ptr<Vector3[]> m_filterColor;
+    std::unique_ptr<Vector3[]> m_filterAlbedo;
+    std::unique_ptr<Vector3[]> m_filterAlbedoOutput;
+    std::unique_ptr<Vector3[]> m_filterNormal;
+    std::unique_ptr<Vector3[]> m_filterNormalOutput;
+    std::unique_ptr<Vector3[]> m_filterOutput;
+    oidn::DeviceRef m_oidnDevice;
+    oidn::FilterRef m_oidnAlbedoFilter;
+    oidn::FilterRef m_oidnNormalFilter;
+    oidn::FilterRef m_oidnFilter;
+
+    Vector2i m_filmSize;
+};
+
 
 class MTS_EXPORT_RENDER ProgressiveMonteCarloIntegrator : public MonteCarloIntegrator{
 
@@ -38,6 +61,10 @@ class MTS_EXPORT_RENDER ProgressiveMonteCarloIntegrator : public MonteCarloInteg
 
     void cancel();
 
+    virtual void postprocess(const Scene *scene, RenderQueue *queue,
+        const RenderJob *job, int sceneResID, int sensorResID,
+        int samplerResID);
+
     virtual void preprogression(RenderQueue *queue, const RenderJob *job,
 			int sceneResID, int sensorResID, int samplerResID);
 
@@ -62,7 +89,11 @@ protected:
     ref<Timer> m_timer;
 
     ref<Timer> m_progressionTimer;
+    ref<Timer> m_denoiseTimer;
     int m_progressionCounter {0};
+    int m_denoiseProgressionCounter {0};
+    bool m_denoiseFinal {false};
+    bool m_denoiseProgressive {false};
     /// Should the rendering stop
     volatile bool m_cancel;
 
@@ -77,7 +108,7 @@ protected:
     Vector2i m_filmSize;
 
     std::vector<ref<BlockedRenderProcess>> m_renderProcesses;
-
+    DenoiseBuffer m_denoiseBuffer;
     float m_maxComponentValue {std::numeric_limits<float>::infinity()};
 };
 

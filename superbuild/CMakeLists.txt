@@ -96,6 +96,17 @@ endif()
 
 
 ## ======================================================================== ##
+## Build OpenImageDenoise
+## ======================================================================== ##
+
+option(BUILD_OIDN "Build OpenImageDenoise as a part of the superbuild." ON)
+option(BUILD_OIDN_FROM_SOURCE "Build OpenImageDenoise or use pre-built version?" OFF)
+set(OIDN_VERSION "1.4.1" CACHE STRING "Which version of OpenImageDenoise to build?")
+if (BUILD_OIDN)
+  include(dep_oidn)
+endif()
+
+## ======================================================================== ##
 ## Build Dependencies
 ## ======================================================================== ##
 
@@ -140,6 +151,7 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
     -DCMAKE_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
     $<$<BOOL:${BUILD_TBB}>:-DTBB_ROOT=${CMAKE_INSTALL_PREFIX}>
     -Dopenpgl_DIR=${openpgl_DIR}
+    -DOpenImageDenoise_DIR=${CMAKE_PREFIX_PATH}"/lib/cmake/OpenImageDenoise-1.4.1"
     -DOPENEXR_HOME=${CMAKE_INSTALL_PREFIX}
     -DILMBASE_HOME=${CMAKE_INSTALL_PREFIX}
   )
@@ -168,5 +180,6 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
     $<$<BOOL:${BUILD_OPENEXR}>:openexr>
     $<$<BOOL:${BUILD_TBB}>:tbb>
     $<$<BOOL:${BUILD_OPENPGL}>:openpgl>
+    $<$<BOOL:${BUILD_OIDN}>:oidn>
   )
 endif()
