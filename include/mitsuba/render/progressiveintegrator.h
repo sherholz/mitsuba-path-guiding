@@ -4,31 +4,10 @@
 #define __MITSUBA_RENDER_PROGINTEGRATOR_H_
 
 #include <mitsuba/render/integrator.h>
-
-#include <OpenImageDenoise/oidn.hpp>
+#include <mitsuba/render/denoiser.h>
 #include <limits>
 
 MTS_NAMESPACE_BEGIN
-struct DenoiseBuffer {
-
-    void init(const Vector2i filmSize);
-    void denoise();
-    void storeBuffers(std::string filename);
-
-    std::unique_ptr<Vector3[]> m_filterColor;
-    std::unique_ptr<Vector3[]> m_filterAlbedo;
-    std::unique_ptr<Vector3[]> m_filterAlbedoOutput;
-    std::unique_ptr<Vector3[]> m_filterNormal;
-    std::unique_ptr<Vector3[]> m_filterNormalOutput;
-    std::unique_ptr<Vector3[]> m_filterOutput;
-    oidn::DeviceRef m_oidnDevice;
-    oidn::FilterRef m_oidnAlbedoFilter;
-    oidn::FilterRef m_oidnNormalFilter;
-    oidn::FilterRef m_oidnFilter;
-
-    Vector2i m_filmSize;
-};
-
 
 class MTS_EXPORT_RENDER ProgressiveMonteCarloIntegrator : public MonteCarloIntegrator{
 
@@ -108,7 +87,7 @@ protected:
     Vector2i m_filmSize;
 
     std::vector<ref<BlockedRenderProcess>> m_renderProcesses;
-    DenoiseBuffer m_denoiseBuffer;
+    mutable DenoiseBuffer m_denoiseBuffer;
     float m_maxComponentValue {std::numeric_limits<float>::infinity()};
 };
 
