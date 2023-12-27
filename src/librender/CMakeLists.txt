@@ -8,6 +8,7 @@ set(HDRS
   ${INCLUDE_DIR}/bsdf.h
   ${INCLUDE_DIR}/common.h
   ${INCLUDE_DIR}/emitter.h
+  ${INCLUDE_DIR}/denoiser.h
   ${INCLUDE_DIR}/film.h
   ${INCLUDE_DIR}/fwd.h
   ${INCLUDE_DIR}/gatherproc.h
@@ -54,6 +55,7 @@ set(HDRS
 set(SRCS
   bsdf.cpp
   common.cpp
+  denoiser.cpp
   emitter.cpp
   film.cpp
   gatherproc.cpp
