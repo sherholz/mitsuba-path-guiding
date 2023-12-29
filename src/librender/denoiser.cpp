@@ -65,12 +65,30 @@ MTS_NAMESPACE_BEGIN
 		bitmap->write(Bitmap::EOpenEXR, filename);
 	}
 
-	void DenoiseBuffer::add(int pixIdx, const Vector3& color, const Vector3& albedo, const Vector3& normal){
+	void DenoiseBuffer::loadBuffers(std::string filename){
+		ref<Bitmap> bitmap = new Bitmap(filename, "color");
+		Vector2i size = bitmap->getSize();
+		this->init(size);
+
+		std::memcpy(&m_filterColor[0], bitmap->getData(), size[0]*size[1]*sizeof(Vector3));
+		bitmap = new Bitmap(filename, "output");
+		std::memcpy(&m_filterOutput[0], bitmap->getData(), size[0]*size[1]*sizeof(Vector3));
+		bitmap = new Bitmap(filename, "normal");
+		std::memcpy(&m_filterNormal[0], bitmap->getData(), size[0]*size[1]*sizeof(Vector3));
+		bitmap = new Bitmap(filename, "normal_output");
+		std::memcpy(&m_filterNormalOutput[0], bitmap->getData(), size[0]*size[1]*sizeof(Vector3));
+		bitmap = new Bitmap(filename, "albedo");
+		std::memcpy(&m_filterAlbedo[0], bitmap->getData(), size[0]*size[1]*sizeof(Vector3));
+		bitmap = new Bitmap(filename, "albedo_output");
+		std::memcpy(&m_filterAlbedoOutput[0], bitmap->getData(),size[0]*size[1]*sizeof(Vector3));
+	}
+
+	void DenoiseBuffer::add(int pixIdx, const DenoiseBuffer::Sample& sample){
 		m_sampleCounts[pixIdx] +=  1;
 		float alpha = 1.f / m_sampleCounts[pixIdx];
-		m_filterColor[pixIdx] = (1.f - alpha) * m_filterColor[pixIdx] + alpha * color;
-		m_filterAlbedo[pixIdx] = (1.f - alpha) * m_filterAlbedo[pixIdx] + alpha * albedo;
-		m_filterNormal[pixIdx] = (1.f - alpha) * m_filterNormal[pixIdx] + alpha * normal;
+		m_filterColor[pixIdx] = (1.f - alpha) * m_filterColor[pixIdx] + alpha * Vector3(sample.color[0], sample.color[1], sample.color[2]);
+		m_filterAlbedo[pixIdx] = (1.f - alpha) * m_filterAlbedo[pixIdx] + alpha  * Vector3(sample.albedo[0], sample.albedo[1], sample.albedo[2]);;
+		m_filterNormal[pixIdx] = (1.f - alpha) * m_filterNormal[pixIdx] + alpha * sample.normal;
 	}
 
 	Spectrum DenoiseBuffer::get(int pixIdx) const {

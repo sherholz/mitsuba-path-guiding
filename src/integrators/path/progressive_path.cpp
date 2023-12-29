@@ -146,8 +146,6 @@ public:
         Spectrum throughput(1.0f);
         Float eta = 1.0f;
 
-        int numDiffuseGlossyInteractions = 0;
-
         while (rRec.depth <= m_maxDepth || m_maxDepth < 0) {
             if (!its.isValid()) {
                 /* If no intersection could be found, potentially return
@@ -156,8 +154,6 @@ public:
                     && (!m_hideEmitters || scattered)){
                     Spectrum value = throughput * scene->evalEnvironment(ray);
                     Li += value;
-                    if (numDiffuseGlossyInteractions == 0)
-                        rRec.primaryAlbedo = value;
                 }
                 break;
             }
@@ -166,11 +162,6 @@ public:
 
             /* Adding denoise features */
             const int bsdfType = bsdf->getType();
-            if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
-                rRec.primaryAlbedo = throughput * bsdf->getAlbedo(rRec.its);
-                rRec.primaryNormal = rRec.its.toWorld(Vector3(0, 0, 1));
-                numDiffuseGlossyInteractions++;
-            }
 
             /* Possibly include emitted radiance if requested */
             if (its.isEmitter() && (rRec.type & RadianceQueryRecord::EEmittedRadiance)

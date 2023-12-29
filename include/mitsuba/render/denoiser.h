@@ -7,13 +7,21 @@
 
 MTS_NAMESPACE_BEGIN
 
-struct DenoiseBuffer {
+struct MTS_EXPORT_RENDER DenoiseBuffer {
+
+    struct Sample{
+        Spectrum color {0.f};
+        Spectrum albedo {0.f};
+        Vector3 normal {0.f, 0.f, -1.f};
+    };
 
     void init(const Vector2i filmSize);
     void denoise();
     void storeBuffers(std::string filename);
-    void add(int pixIdx, const Vector3& color, const Vector3& albedo, const Vector3& normal);
+    void loadBuffers(std::string filename);
+    void add(int pixIdx, const Sample& sample);
     Spectrum get(int pixIdx) const;
+private:
     std::unique_ptr<Vector3[]> m_filterColor;
     std::unique_ptr<Vector3[]> m_filterAlbedo;
     std::unique_ptr<Vector3[]> m_filterAlbedoOutput;

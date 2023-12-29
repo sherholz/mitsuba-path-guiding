@@ -111,8 +111,6 @@ public:
         Spectrum throughput(1.0f);
         bool scattered = false;
 
-        int numDiffuseGlossyInteractions = 0;
-
         while (rRec.depth <= m_maxDepth || m_maxDepth < 0) {
             /* ==================================================================== */
             /*                 Radiative Transfer Equation sampling                 */
@@ -127,13 +125,6 @@ public:
                     break;
 
                 throughput *= mRec.sigmaS * mRec.transmittance / mRec.pdfSuccess;
-
-                /* Adding denoise features */
-                if (numDiffuseGlossyInteractions == 0) {
-                    rRec.primaryAlbedo = throughput/**mRec.sigmaS*//(mRec.sigmaS+mRec.sigmaA);
-                    rRec.primaryNormal = -ray.d;
-                }
-                numDiffuseGlossyInteractions++;
 
                 /* ==================================================================== */
                 /*                          Luminaire sampling                          */
@@ -221,9 +212,6 @@ public:
                         if (rRec.medium)
                             value *= rRec.medium->evalTransmittance(ray, rRec.sampler);
                         Li += value;
-                        /* Adding denoise features */
-                        if (numDiffuseGlossyInteractions == 0)
-                            rRec.primaryAlbedo = value;
                     }
 
                     break;
@@ -257,14 +245,6 @@ public:
 
 
                 const BSDF *bsdf = its.getBSDF(ray);
-
-                /* Adding denoise features */
-                const int bsdfType = bsdf->getType();
-                if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
-                    rRec.primaryAlbedo = throughput * bsdf->getAlbedo(rRec.its);
-                    rRec.primaryNormal = rRec.its.toWorld(Vector3(0, 0, 1));
-                    numDiffuseGlossyInteractions++;
-                }
 
                 /* ==================================================================== */
                 /*                          Luminaire sampling                          */

@@ -25,7 +25,6 @@ MTS_NAMESPACE_BEGIN
 		ref<Timer> miscTimer                = new Timer();
 
 		m_progressionTimer 					= new Timer();
-		m_denoiseTimer 						= new Timer();
 
 		Sampler *samplerRendering   = static_cast<Sampler *>(sched->getResource(samplerResID, 0));
 		m_spp = samplerRendering->getSampleCount();
@@ -53,10 +52,7 @@ MTS_NAMESPACE_BEGIN
 		Log( EInfo, "This took %fs", miscTimer->getMilliseconds() * 1e-3f );
 
 		m_progressionCounter = 0;
-		m_denoiseProgressionCounter = 0;
 		m_cancel = false;
-
-		m_denoiseBuffer.init(m_filmSize);
 
 		return true;
 	}
@@ -262,8 +258,6 @@ MTS_NAMESPACE_BEGIN
 
 				rRec.newQuery(queryType, sensor->getMedium());
 				rRec.pixelId = pixIdx;
-				rRec.primaryAlbedo.fromLinearRGB(0.f, 0.f, 0.f);
-				rRec.primaryNormal = Vector3(0.f, 0.f, 0.f);
 				Point2 samplePos(Point2(offset) + Vector2(rRec.nextSample2D()));
 
 				if (needsApertureSample)
@@ -276,28 +270,13 @@ MTS_NAMESPACE_BEGIN
 
 				sensorRay.scaleDifferential(diffScaleFactor);
 
-				Vector3 color(0.f);
-				Vector3 albedo(1.f);
-				Vector3 normal(0.f, 0.f, -1.f);
-
 				spec *= this->Li(sensorRay, rRec);
 				float maxSpec = spec.max();
 				if (maxSpec > m_maxComponentValue) {
 					spec *= m_maxComponentValue / maxSpec;
 				}
-				spec.toLinearRGB(color[0], color[1], color[2]);
-				rRec.primaryAlbedo.toLinearRGB(albedo[0], albedo[1], albedo[2]);
-				normal = rRec.primaryNormal;
-
-				if (m_denoiseProgressionCounter > 0 && m_denoiseProgressive) {
-					Spectrum spec = m_denoiseBuffer.get(pixIdx);
-					block->put(samplePos, spec, rRec.alpha);
-				} else {
-					block->put(samplePos, spec, rRec.alpha);
-				}
+				block->put(samplePos, spec, rRec.alpha);
 				rSampler->advance();
-
-				m_denoiseBuffer.add(pixIdx, color, albedo, normal);
 			}
 		}
 	}
@@ -330,26 +309,11 @@ MTS_NAMESPACE_BEGIN
 			int sceneResID, int sensorResID, int samplerResID) {
 		m_progressionTimer->reset();
 		m_progressionCounter++;
-		m_denoiseProgressionCounter++;
 	}
 
 	void ProgressiveMonteCarloIntegrator::postprogression(RenderQueue *queue, const RenderJob *job,
 			int sceneResID, int sensorResID, int samplerResID) {
 		Log( EInfo, "Progression[%d]: %d spp took %fs", m_progressionCounter, m_samplesPerProgression, m_progressionTimer->getMilliseconds() * 1e-3f );
-
-		int progression = m_progressionCounter - 1;
-	
-		if (m_denoiseProgressive) {
-			m_denoiseTimer->reset();
-			m_denoiseBuffer.denoise();
-			Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
-/*
-			if (m_filterDump) {
-				Log( EInfo, "Filter[%d]: dumping buffers");
-				m_denoiseBuffer.storeBuffers("filter_" + std::to_string(m_progressionCounter) + ".exr");
-			}
-*/
-		}
 	}
 
     void ProgressiveMonteCarloIntegrator::cancel() {
