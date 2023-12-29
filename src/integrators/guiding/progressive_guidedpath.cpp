@@ -21,6 +21,7 @@
 
 #include <mitsuba/core/fresolver.h>
 
+#include <mitsuba/render/denoiser.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/progressiveintegrator.h>
 
@@ -36,8 +37,10 @@
 
 #include <atomic>
 
-//#define SUPPORT_DENOISING
-//#define GUIDING_RR
+
+#ifdef OPENPGL_EF_RADIANCE_CACHES
+#define GUIDING_RR
+#endif
 
 typedef mitsuba::guiding::GuidedBSDF GuidedBSDFType;
 typedef mitsuba::guiding::GuidedPhaseFunction GuidedPhaseFunctionType;
@@ -184,7 +187,11 @@ public:
         m_overallTrainingSamples            = props.getSize("trainingSamples", 32);
         m_trainingSamplesPerIteration       = props.getSize("maxSamplesPerIteration", 1);
         m_samplesPerProgression = m_trainingSamplesPerIteration;
-
+#ifdef GUIDING_RR
+		m_savePixelEstimate = props.getBoolean("savePixelEstimate", false);
+		m_loadPixelEstimate = props.getBoolean("loadPixelEstimate", false);
+		m_pixelEstimateFile = props.getString("pixelEstimateFile", "pixEst.exr");
+#endif
         m_training = false;
         m_canceled = false;
 
@@ -208,7 +215,22 @@ public:
         if(m_guidedRR)
         {
             m_rrDepth = 1;
+            m_calulatePixelEstimate = true;
         }
+
+        if (m_savePixelEstimate){
+            m_calulatePixelEstimate = true;
+        }
+
+        if(m_loadPixelEstimate)
+		{
+			fs::path pixelEstimateFile = Thread::getThread()->getFileResolver()->resolve(m_pixelEstimateFile);
+
+            if (!fs::exists(pixelEstimateFile))
+                Log(EError, "Pixel estimate file \"%s\" could not be found!", pixelEstimateFile.string().c_str());
+			m_pixelEstimateFile = pixelEstimateFile.string();
+            m_calulatePixelEstimate = false;
+		}
 #endif
     }
 
@@ -272,6 +294,20 @@ public:
             {
                 m_perThreadGuidedBSDF[i] = new GuidedBSDFType(&*m_guidingField, m_useSurfaceGuiding, m_bsdfProbability, m_useCosineProduct, false);
             }
+#ifdef GUIDING_RR
+            m_denoiseTimer = new Timer();
+            if(m_loadPixelEstimate && fs::exists(m_pixelEstimateFile))
+            {
+                m_pixelEstimateBuffer.loadBuffers(m_pixelEstimateFile);
+                m_pixelEstimateReady = true;
+            } else {
+                ref<Sensor> sensor = static_cast<Sensor *>(sched->getResource(sensorResID));
+                ref<Film> film = sensor->getFilm();
+                Vector2i filmSize = film->getSize();
+                m_pixelEstimateBuffer.init(filmSize);
+                m_pixelEstimateReady = false;
+            }
+#endif
         }
         return success;
     }
@@ -285,7 +321,13 @@ public:
         {
             m_guidingField->Store(m_guidingCachesFile);
         }
-
+#ifdef GUIDING_RR
+		if (m_savePixelEstimate)
+		{
+			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
+            m_pixelEstimateBuffer.storeBuffers(m_pixelEstimateFile.c_str());
+		}
+#endif
         SLog(EInfo, "Avg. path length: %f (%d/%d)",
             (float)avgPathLength.getValue()/(float)avgPathLength.getBase(),
             avgPathLength.getValue(),
@@ -369,13 +411,25 @@ public:
             }
             Log( EInfo, "Training[%d]: took %fs", m_guidingField->GetIteration(), trainingTimer->getMilliseconds() * 1e-3f );
             m_iteration++;
+#ifdef GUIDING_RR
+            if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
+            {
+                m_denoiseTimer->reset();
+                m_pixelEstimateBuffer.denoise();
+                Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
+                m_pixelEstimateReady = true;
+                m_pixelEstimateWave++;
+            }
+#endif
         }
     }
 
     Spectrum Li(const RayDifferential &r, RadianceQueryRecord &rRec) const {
 
-	    //Spectrum pixelEstimate = rRec.pixelEstimate;
-        //return pixelEstimate;
+#ifdef GUIDING_RR
+        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateBuffer.get(rRec.pixelId) : Spectrum(0.f);
+        DenoiseBuffer::Sample denoiseSample;
+#endif
         // guiding specific thread local instances
 	    static thread_local openpgl::cpp::PathSegmentStorage* pathSegmentDataStorage;
         static thread_local GuidedBSDFType* guidedBSDF;
@@ -406,7 +460,7 @@ public:
 
         Spectrum throughput(1.0f);
         Float eta = 1.0f;
-#ifdef SUPPORT_DENOISING
+#ifdef GUIDING_RR
         int numDiffuseGlossyInteractions = 0;
 #endif
         pgl_vec3f pglZero = openpgl::cpp::Vector3(0.0f, 0.0f, 0.0f);
@@ -429,9 +483,9 @@ public:
                     && (!m_hideEmitters || scattered)) {
                     Spectrum value = throughput * scene->evalEnvironment(ray);
                     Li += value;
-#ifdef SUPPORT_DENOISING
+#ifdef GUIDING_RR
                     if (numDiffuseGlossyInteractions == 0)
-                        rRec.primaryAlbedo = value;
+                        denoiseSample.albedo = value;
 #endif
                 }
                 break;
@@ -467,12 +521,12 @@ public:
 
             const BSDF *surfaceBSDF = its.getBSDF(ray);
 
-#ifdef SUPPORT_DENOISING
+#ifdef GUIDING_RR
             /* Adding denoise features */
             const int bsdfType = surfaceBSDF->getType();
             if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
-                rRec.primaryAlbedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
-                rRec.primaryNormal = rRec.its.toWorld(Vector3(0, 0, 1));
+                denoiseSample.albedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
+                denoiseSample.normal = rRec.its.toWorld(Vector3(0, 0, 1));
                 numDiffuseGlossyInteractions++;
             }
 #endif
@@ -777,7 +831,10 @@ public:
         {
             pathSegmentDataStorage->Clear();
         }
-
+#ifdef GUIDING_RR
+        denoiseSample.color = Li;
+        m_pixelEstimateBuffer.add(rRec.pixelId, denoiseSample);
+#endif
         return Li;
     }
 
@@ -798,7 +855,6 @@ public:
             << "  rrDepth = " << m_rrDepth << "," << endl
             << "  strictNormals = " << m_strictNormals << endl
             << "  tech = " << m_guidingFieldProps.getString("directionalDistribution") << endl
-            << "  est = " << m_guidingFieldProps.getString("leafEstimator") << endl
             << "]";
         return oss.str();
     }
@@ -829,6 +885,15 @@ private:
 
 #ifdef GUIDING_RR
     bool m_guidedRR {true};
+    bool m_pixelEstimateReady {false};
+    mutable DenoiseBuffer m_pixelEstimateBuffer;
+
+    bool m_calulatePixelEstimate {false};
+    int m_pixelEstimateWave {0};
+    bool m_savePixelEstimate {false};
+    bool m_loadPixelEstimate {false};
+    std::string m_pixelEstimateFile {""};
+    ref<Timer> m_denoiseTimer;
 #endif
     bool m_rrCorrection {true};
     int m_iteration {0};
