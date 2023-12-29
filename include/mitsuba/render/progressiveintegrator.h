@@ -4,7 +4,6 @@
 #define __MITSUBA_RENDER_PROGINTEGRATOR_H_
 
 #include <mitsuba/render/integrator.h>
-#include <mitsuba/render/denoiser.h>
 #include <limits>
 
 MTS_NAMESPACE_BEGIN
@@ -68,11 +67,7 @@ protected:
     ref<Timer> m_timer;
 
     ref<Timer> m_progressionTimer;
-    ref<Timer> m_denoiseTimer;
     int m_progressionCounter {0};
-    int m_denoiseProgressionCounter {0};
-    bool m_denoiseFinal {false};
-    bool m_denoiseProgressive {false};
     /// Should the rendering stop
     volatile bool m_cancel;
 
@@ -87,7 +82,6 @@ protected:
     Vector2i m_filmSize;
 
     std::vector<ref<BlockedRenderProcess>> m_renderProcesses;
-    mutable DenoiseBuffer m_denoiseBuffer;
     float m_maxComponentValue {std::numeric_limits<float>::infinity()};
 };
 
