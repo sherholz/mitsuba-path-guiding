@@ -21,6 +21,7 @@
 
 #include <mitsuba/core/fresolver.h>
 
+#include <mitsuba/render/denoiser.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/progressiveintegrator.h>
 
@@ -34,8 +35,9 @@
 
 #include <atomic>
 
-//#define SUPPORT_DENOISING
-//#define GUIDING_RR
+#ifdef OPENPGL_EF_RADIANCE_CACHES
+#define GUIDING_RR
+#endif
 //#define GUIDING_SIGMA_S
 
 // typedef of the guiding classes
@@ -156,7 +158,11 @@ public:
         m_overallTrainingSamples            = props.getSize("trainingSamples", 32);
         m_trainingSamplesPerIteration       = props.getSize("maxSamplesPerIteration", 1);
         m_samplesPerProgression = m_trainingSamplesPerIteration;
-
+#ifdef GUIDING_RR
+		m_savePixelEstimate = props.getBoolean("savePixelEstimate", false);
+		m_loadPixelEstimate = props.getBoolean("loadPixelEstimate", false);
+		m_pixelEstimateFile = props.getString("pixelEstimateFile", "pixEst.exr");
+#endif
 		m_saveGuidingCaches = props.getBoolean("saveGuidingCaches", false);
 		m_loadGuidingCaches = props.getBoolean("loadGuidingCaches", false);
 		m_guidingCachesFile = props.getString("guidingCachesFile", "guidingCaches.field");  
@@ -179,7 +185,22 @@ public:
         if(m_guidedRR)
         {
             m_rrDepth = 1;
+            m_calulatePixelEstimate = true;
         }
+
+        if (m_savePixelEstimate){
+            m_calulatePixelEstimate = true;
+        }
+
+        if(m_loadPixelEstimate)
+		{
+			fs::path pixelEstimateFile = Thread::getThread()->getFileResolver()->resolve(m_pixelEstimateFile);
+
+            if (!fs::exists(pixelEstimateFile))
+                Log(EError, "Pixel estimate file \"%s\" could not be found!", pixelEstimateFile.string().c_str());
+			m_pixelEstimateFile = pixelEstimateFile.string();
+            m_calulatePixelEstimate = false;
+		}
 #endif
     }
 
@@ -253,7 +274,20 @@ public:
             m_fieldUpdateTimer = new Timer();
             m_fieldUpdateTimings.clear();
             m_sampleCounts.clear();
-
+#ifdef GUIDING_RR
+            m_denoiseTimer = new Timer();
+            if(m_loadPixelEstimate && fs::exists(m_pixelEstimateFile))
+            {
+                m_pixelEstimateBuffer.loadBuffers(m_pixelEstimateFile);
+                m_pixelEstimateReady = true;
+            } else {
+                ref<Sensor> sensor = static_cast<Sensor *>(sched->getResource(sensorResID));
+                ref<Film> film = sensor->getFilm();
+                Vector2i filmSize = film->getSize();
+                m_pixelEstimateBuffer.init(filmSize);
+                m_pixelEstimateReady = false;
+            }
+#endif
         }
         return success;
     }
@@ -267,6 +301,13 @@ public:
         {
             m_guidingField->Store(m_guidingCachesFile);
         }
+#ifdef GUIDING_RR
+		if (m_savePixelEstimate)
+		{
+			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
+            m_pixelEstimateBuffer.storeBuffers(m_pixelEstimateFile.c_str());
+		}
+#endif
         SLog(EInfo, "AvgX. path length: %f (%d/%d)",
             (float)avgPathLength.getValue()/(float)avgPathLength.getBase(),
             avgPathLength.getValue(),
@@ -349,7 +390,6 @@ public:
 
                 m_guidingField->SetSceneBounds(bounds);
                 m_fieldUpdateTimer->reset();
-                m_fieldUpdateTimer->start();
                 m_guidingField->Update(m_sampleStorage);
                 m_fieldUpdateTimer->stop();
                 m_sampleCounts.push_back(numValidSamples);
@@ -371,6 +411,17 @@ public:
                 // clear the sample storage after training is done
                 m_sampleStorage.Clear();
             }
+
+#ifdef GUIDING_RR
+            if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
+            {
+                m_denoiseTimer->reset();
+                m_pixelEstimateBuffer.denoise();
+                Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
+                m_pixelEstimateReady = true;
+                m_pixelEstimateWave++;
+            }
+#endif
         }
     }
 
@@ -378,7 +429,8 @@ public:
 
 	    bool useFWD = true;
 #ifdef GUIDING_RR
-        Spectrum pixelEstimate = rRec.pixelEstimate;
+        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateBuffer.get(rRec.pixelId) : Spectrum(0.f);
+        DenoiseBuffer::Sample denoiseSample;
 #endif
         // guiding specific thread local instances
 	    static thread_local openpgl::cpp::PathSegmentStorage* pathSegmentDataStorage;
@@ -429,9 +481,8 @@ public:
         throughputs.push_back(throughput);
         Float eta = 1.0f;
 
-#ifdef SUPPORT_DENOISING
         int numDiffuseGlossyInteractions = 0;
-#endif
+
         // sample data generated when splitting the ray inside a volume
         // to query the emission form the surface behind the volume using rayIntersectAndLookForEmitter
 
@@ -539,11 +590,11 @@ public:
                 
                 Spectrum inscatteredRadiance(1.0f);
 #ifdef OPENPGL_EF_RADIANCE_CACHES
-                if(m_volumeAdjointType == GuidingHelper::EVALo)
+                if(m_volumeAdjointType == Guiding::EVALo)
                     inscatteredRadiance = guidedPhaseFunction->outgoingRadiance(-ray.d);
-                else if(m_volumeAdjointType == GuidingHelper::EVAInscattered)
+                else if(m_volumeAdjointType == Guiding::EVAInscattered)
                     inscatteredRadiance = guidedPhaseFunction->inscatteredRadiance(-ray.d, meanCosine);
-                else if(m_volumeAdjointType == GuidingHelper::EVAFluence)
+                else if(m_volumeAdjointType == Guiding::EVAFluence)
                     inscatteredRadiance = (1.0f/(4.0f*M_PI)) * guidedPhaseFunction->fluence();
                 else
                     inscatteredRadiance = guidedPhaseFunction->outgoingRadiance(-ray.d);
@@ -556,13 +607,12 @@ public:
                 }
 #endif
                 /* Adding denoise features */
-#ifdef SUPPORT_DENOISING
                 if (numDiffuseGlossyInteractions == 0) {
-                    rRec.primaryAlbedo = throughput/**mRec.sigmaS*//(mRec.sigmaS+mRec.sigmaA);
-                    rRec.primaryNormal = -ray.d;
+                    denoiseSample.albedo = throughput/**mRec.sigmaS*//(mRec.sigmaS+mRec.sigmaA);
+                    denoiseSample.normal = -ray.d;
                 }
                 numDiffuseGlossyInteractions++;
-#endif
+
                 /* ==================================================================== */
                 /*                          Luminaire sampling                          */
                 /* ==================================================================== */
@@ -727,12 +777,10 @@ public:
                         if (rRec.medium)
                             value *= rRec.medium->evalTransmittance(ray, rRec.sampler);
                         Li += value;
-                        //std::cout << "PONG: depth = " << rRec.depth<< std::endl;
-#ifdef SUPPORT_DENOISING
+
                         /* Adding denoise features */
                         if (numDiffuseGlossyInteractions == 0)
-                            rRec.primaryAlbedo = value;
-#endif
+                            denoiseSample.albedo = value;
                     }
                     if (nextHitEmitter) { // Add Envmap if we hit an emitter
                         //std::cout << "PING: depth = " << rRec.depth<< std::endl;
@@ -811,21 +859,20 @@ public:
                 }
                 //const BSDF *surfaceBSDF = its.getBSDF(ray);
 
-#ifdef SUPPORT_DENOISING
                 /* Adding denoise features */
                 if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
-                    rRec.primaryAlbedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
-                    rRec.primaryNormal = rRec.its.toWorld(Vector3(0, 0, 1));
+                    denoiseSample.albedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
+                    denoiseSample.normal = rRec.its.toWorld(Vector3(0, 0, 1));
                     numDiffuseGlossyInteractions++;
                 }
-#endif
+
                 guidedBSDF->prepare(&*m_guidingField, its, -ray.d, surfaceBSDF, rRec.sampler);
                 Spectrum rrThroughput = throughput;
                 Spectrum outgoingRadiance(1.0f);
 #ifdef OPENPGL_EF_RADIANCE_CACHES
-                if(m_surfaceAdjointType == GuidingHelper::ESALo)
+                if(m_surfaceAdjointType == Guiding::ESALo)
                     outgoingRadiance = guidedBSDF->outgoingRadiance(-ray.d); 
-                else if(m_surfaceAdjointType == GuidingHelper::ESAIrradiance){
+                else if(m_surfaceAdjointType == Guiding::ESAIrradiance){
                     Vector3 normal = its.toWorld(Vector3(0.0,0.0,1.0));
                     if(dot(normal,its.toWorld(its.wi))< 0){
                         normal = -normal;
@@ -842,11 +889,9 @@ public:
                 } else if(bsdfType & BSDF::EDelta){
                     q = 0.95f;
                     guideRR = true;
-                    //std::cout<< "ping2" <<std::endl;
                 }
 #endif
-                //q = 0.95f;
-                //guideRR = true;
+
                 /* Possibly include emitted radiance if requested */
                 /* Note: The following is usally only true a light source is hit directly
                    by a primary ray. At the end of this loop rRec.type is set to ERadianceNoEmission*/
@@ -1202,7 +1247,10 @@ public:
         {
             pathSegmentDataStorage->Clear();
         }
-
+#ifdef GUIDING_RR
+        denoiseSample.color = Li;
+        m_pixelEstimateBuffer.add(rRec.pixelId, denoiseSample);
+#endif
         return Li;
     }
 
@@ -1344,6 +1392,15 @@ private:
 
 #ifdef GUIDING_RR
     bool m_guidedRR {true};
+    bool m_pixelEstimateReady {false};
+    mutable DenoiseBuffer m_pixelEstimateBuffer;
+
+    bool m_calulatePixelEstimate {false};
+    int m_pixelEstimateWave {0};
+    bool m_savePixelEstimate {false};
+    bool m_loadPixelEstimate {false};
+    std::string m_pixelEstimateFile {""};
+    ref<Timer> m_denoiseTimer;
 #endif
     bool m_rrCorrection {true};
     int m_iteration {0};
