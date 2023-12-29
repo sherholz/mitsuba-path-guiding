@@ -24,10 +24,16 @@ struct MTS_EXPORT_RENDER DenoiseBuffer {
 private:
     std::unique_ptr<Vector3[]> m_filterColor;
     std::unique_ptr<Vector3[]> m_filterAlbedo;
-    std::unique_ptr<Vector3[]> m_filterAlbedoOutput;
     std::unique_ptr<Vector3[]> m_filterNormal;
-    std::unique_ptr<Vector3[]> m_filterNormalOutput;
+
     std::unique_ptr<Vector3[]> m_filterOutput;
+
+    oidn::BufferRef m_bufferColor;
+    oidn::BufferRef m_bufferAlbedo;
+    oidn::BufferRef m_bufferAlbedoOutput;
+    oidn::BufferRef m_bufferNormal;
+    oidn::BufferRef m_bufferNormalOutput;
+    oidn::BufferRef m_bufferOutput;
     std::unique_ptr<int[]> m_sampleCounts;
     oidn::DeviceRef m_oidnDevice;
     oidn::FilterRef m_oidnAlbedoFilter;
