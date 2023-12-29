@@ -91,7 +91,7 @@ set(SRCS
   vpl.cpp
 )
 
-FIND_PACKAGE(OpenImageDenoise 1.4.1 REQUIRED)
+FIND_PACKAGE(OpenImageDenoise 2.1.0 REQUIRED)
 
 add_definitions(-DMTS_BUILD_MODULE=MTS_MODULE_RENDER)
 
