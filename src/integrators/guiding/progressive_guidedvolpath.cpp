@@ -278,13 +278,13 @@ public:
             m_denoiseTimer = new Timer();
             if(m_loadPixelEstimate && fs::exists(m_pixelEstimateFile))
             {
-                m_pixelEstimateBuffer.loadBuffers(m_pixelEstimateFile);
+                m_pixelEstimateDenoiser.loadBuffers(m_pixelEstimateFile);
                 m_pixelEstimateReady = true;
             } else {
                 ref<Sensor> sensor = static_cast<Sensor *>(sched->getResource(sensorResID));
                 ref<Film> film = sensor->getFilm();
                 Vector2i filmSize = film->getSize();
-                m_pixelEstimateBuffer.init(filmSize);
+                m_pixelEstimateDenoiser.init(filmSize);
                 m_pixelEstimateReady = false;
             }
 #endif
@@ -303,9 +303,9 @@ public:
         }
 #ifdef GUIDING_RR
 		if (m_savePixelEstimate)
-		{
+        {
 			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
-            m_pixelEstimateBuffer.storeBuffers(m_pixelEstimateFile.c_str());
+            m_pixelEstimateDenoiser.storeBuffers(m_pixelEstimateFile.c_str());
 		}
 #endif
         SLog(EInfo, "AvgX. path length: %f (%d/%d)",
@@ -416,7 +416,7 @@ public:
             if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
             {
                 m_denoiseTimer->reset();
-                m_pixelEstimateBuffer.denoise();
+                m_pixelEstimateDenoiser.denoise();
                 Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
                 m_pixelEstimateReady = true;
                 m_pixelEstimateWave++;
@@ -429,8 +429,8 @@ public:
 
 	    bool useFWD = true;
 #ifdef GUIDING_RR
-        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateBuffer.get(rRec.pixelId) : Spectrum(0.f);
-        DenoiseBuffer::Sample denoiseSample;
+        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateDenoiser.get(rRec.pixelId) : Spectrum(0.f);
+        Denoiser::Sample denoiseSample;
 #endif
         // guiding specific thread local instances
 	    static thread_local openpgl::cpp::PathSegmentStorage* pathSegmentDataStorage;
@@ -607,10 +607,12 @@ public:
                 }
 #endif
                 /* Adding denoise features */
+#ifdef GUIDING_RR
                 if (numDiffuseGlossyInteractions == 0) {
                     denoiseSample.albedo = throughput/**mRec.sigmaS*//(mRec.sigmaS+mRec.sigmaA);
                     denoiseSample.normal = -ray.d;
                 }
+#endif
                 numDiffuseGlossyInteractions++;
 
                 /* ==================================================================== */
@@ -777,11 +779,13 @@ public:
                         if (rRec.medium)
                             value *= rRec.medium->evalTransmittance(ray, rRec.sampler);
                         Li += value;
-
+#ifdef GUIDING_RR
                         /* Adding denoise features */
                         if (numDiffuseGlossyInteractions == 0)
                             denoiseSample.albedo = value;
+#endif
                     }
+
                     if (nextHitEmitter) { // Add Envmap if we hit an emitter
                         //std::cout << "PING: depth = " << rRec.depth<< std::endl;
                         //std::cout << "nextHitEmitter 1"<< std::endl;
@@ -861,8 +865,10 @@ public:
 
                 /* Adding denoise features */
                 if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
+#ifdef GUIDING_RR
                     denoiseSample.albedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
                     denoiseSample.normal = rRec.its.toWorld(Vector3(0, 0, 1));
+#endif
                     numDiffuseGlossyInteractions++;
                 }
 
@@ -1249,7 +1255,7 @@ public:
         }
 #ifdef GUIDING_RR
         denoiseSample.color = Li;
-        m_pixelEstimateBuffer.add(rRec.pixelId, denoiseSample);
+        m_pixelEstimateDenoiser.add(rRec.pixelId, denoiseSample);
 #endif
         return Li;
     }
@@ -1393,7 +1399,7 @@ private:
 #ifdef GUIDING_RR
     bool m_guidedRR {true};
     bool m_pixelEstimateReady {false};
-    mutable DenoiseBuffer m_pixelEstimateBuffer;
+    mutable Denoiser m_pixelEstimateDenoiser;
 
     bool m_calulatePixelEstimate {false};
     int m_pixelEstimateWave {0};

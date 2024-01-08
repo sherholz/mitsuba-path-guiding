@@ -298,13 +298,13 @@ public:
             m_denoiseTimer = new Timer();
             if(m_loadPixelEstimate && fs::exists(m_pixelEstimateFile))
             {
-                m_pixelEstimateBuffer.loadBuffers(m_pixelEstimateFile);
+                m_pixelEstimateDenoiser.loadBuffers(m_pixelEstimateFile);
                 m_pixelEstimateReady = true;
             } else {
                 ref<Sensor> sensor = static_cast<Sensor *>(sched->getResource(sensorResID));
                 ref<Film> film = sensor->getFilm();
                 Vector2i filmSize = film->getSize();
-                m_pixelEstimateBuffer.init(filmSize);
+                m_pixelEstimateDenoiser.init(filmSize);
                 m_pixelEstimateReady = false;
             }
 #endif
@@ -325,7 +325,7 @@ public:
 		if (m_savePixelEstimate)
 		{
 			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
-            m_pixelEstimateBuffer.storeBuffers(m_pixelEstimateFile.c_str());
+            m_pixelEstimateDenoiser.storeBuffers(m_pixelEstimateFile.c_str());
 		}
 #endif
         SLog(EInfo, "Avg. path length: %f (%d/%d)",
@@ -415,7 +415,7 @@ public:
             if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
             {
                 m_denoiseTimer->reset();
-                m_pixelEstimateBuffer.denoise();
+                m_pixelEstimateDenoiser.denoise();
                 Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
                 m_pixelEstimateReady = true;
                 m_pixelEstimateWave++;
@@ -427,8 +427,8 @@ public:
     Spectrum Li(const RayDifferential &r, RadianceQueryRecord &rRec) const {
 
 #ifdef GUIDING_RR
-        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateBuffer.get(rRec.pixelId) : Spectrum(0.f);
-        DenoiseBuffer::Sample denoiseSample;
+        Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateDenoiser.get(rRec.pixelId) : Spectrum(0.f);
+        Denoiser::Sample denoiseSample;
 #endif
         // guiding specific thread local instances
 	    static thread_local openpgl::cpp::PathSegmentStorage* pathSegmentDataStorage;
@@ -833,7 +833,7 @@ public:
         }
 #ifdef GUIDING_RR
         denoiseSample.color = Li;
-        m_pixelEstimateBuffer.add(rRec.pixelId, denoiseSample);
+        m_pixelEstimateDenoiser.add(rRec.pixelId, denoiseSample);
 #endif
         return Li;
     }
@@ -886,7 +886,7 @@ private:
 #ifdef GUIDING_RR
     bool m_guidedRR {true};
     bool m_pixelEstimateReady {false};
-    mutable DenoiseBuffer m_pixelEstimateBuffer;
+    mutable Denoiser m_pixelEstimateDenoiser;
 
     bool m_calulatePixelEstimate {false};
     int m_pixelEstimateWave {0};
