@@ -7,7 +7,7 @@
 
 MTS_NAMESPACE_BEGIN
 
-struct MTS_EXPORT_RENDER DenoiseBuffer {
+struct MTS_EXPORT_RENDER Denoiser {
 
     struct Sample{
         Spectrum color {0.f};
@@ -15,7 +15,7 @@ struct MTS_EXPORT_RENDER DenoiseBuffer {
         Vector3 normal {0.f, 0.f, -1.f};
     };
 
-    void init(const Vector2i filmSize);
+    void init(const Vector2i filmSize, const bool filterFeatures = true);
     void denoise();
     void storeBuffers(std::string filename);
     void loadBuffers(std::string filename);
@@ -28,6 +28,8 @@ private:
 
     std::unique_ptr<Vector3[]> m_filterOutput;
 
+    oidn::DeviceRef m_oidnDevice;
+
     oidn::BufferRef m_bufferColor;
     oidn::BufferRef m_bufferAlbedo;
     oidn::BufferRef m_bufferAlbedoOutput;
@@ -35,12 +37,13 @@ private:
     oidn::BufferRef m_bufferNormalOutput;
     oidn::BufferRef m_bufferOutput;
     std::unique_ptr<int[]> m_sampleCounts;
-    oidn::DeviceRef m_oidnDevice;
+    
     oidn::FilterRef m_oidnAlbedoFilter;
     oidn::FilterRef m_oidnNormalFilter;
     oidn::FilterRef m_oidnFilter;
 
     Vector2i m_filmSize;
+    bool m_filterFeatures {false};
 };
 
 MTS_NAMESPACE_END
