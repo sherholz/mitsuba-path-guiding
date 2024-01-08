@@ -5,7 +5,9 @@
 
 MTS_NAMESPACE_BEGIN
 
-	void DenoiseBuffer::init(const Vector2i filmSize) {
+	void Denoiser::init(const Vector2i filmSize, const bool filterFeatures) {
+		m_filterFeatures = filterFeatures;
+		
 		m_oidnDevice = oidn::newDevice(oidn::DeviceType::CPU);
 		m_oidnDevice.commit();
 
@@ -22,10 +24,8 @@ MTS_NAMESPACE_BEGIN
 		m_filterOutput = std::unique_ptr<Vector3[]>(new Vector3[numPixels]);
 
 		m_bufferColor = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
-		m_bufferAlbedo = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
-		m_bufferAlbedoOutput = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
+		m_bufferAlbedo = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));		
 		m_bufferNormal = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
-		m_bufferNormalOutput = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
 		m_bufferOutput = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
 
 		m_sampleCounts = std::unique_ptr<int[]>(new int[numPixels]);
@@ -33,37 +33,52 @@ MTS_NAMESPACE_BEGIN
 			m_sampleCounts[i] = 0;
 		}
 
-		m_oidnAlbedoFilter = m_oidnDevice.newFilter("RT");
-		m_oidnAlbedoFilter.setImage("albedo", m_bufferAlbedo, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnAlbedoFilter.setImage("output", m_bufferAlbedoOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnAlbedoFilter.commit();
-		
-		m_oidnNormalFilter = m_oidnDevice.newFilter("RT");
-		m_oidnNormalFilter.setImage("normal", m_bufferNormal, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnNormalFilter.setImage("output", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnNormalFilter.commit();
+		if (m_filterFeatures){
+			m_bufferNormalOutput = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
+			m_bufferAlbedoOutput = m_oidnDevice.newBuffer(numPixels * 3 * sizeof(float));
 
-		m_oidnFilter = m_oidnDevice.newFilter("RT");
-		m_oidnFilter.setImage("color", m_bufferColor, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnFilter.setImage("albedo", m_bufferAlbedoOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnFilter.setImage("normal", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnFilter.setImage("output", m_bufferOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-		m_oidnFilter.set("hdr", true);
-		m_oidnFilter.commit();
+			m_oidnAlbedoFilter = m_oidnDevice.newFilter("RT");
+			m_oidnAlbedoFilter.setImage("albedo", m_bufferAlbedo, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnAlbedoFilter.setImage("output", m_bufferAlbedoOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnAlbedoFilter.commit();
+			
+			m_oidnNormalFilter = m_oidnDevice.newFilter("RT");
+			m_oidnNormalFilter.setImage("normal", m_bufferNormal, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnNormalFilter.setImage("output", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnNormalFilter.commit();
 
+			m_oidnFilter = m_oidnDevice.newFilter("RT");
+			m_oidnFilter.setImage("color", m_bufferColor, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("albedo", m_bufferAlbedoOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("normal", m_bufferNormal, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("output", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.set("cleanAux", true); // auxiliary images will be prefiltered
+			m_oidnFilter.set("hdr", true);
+			m_oidnFilter.commit();
+		} else {
+			m_oidnFilter = m_oidnDevice.newFilter("RT");
+			m_oidnFilter.setImage("color", m_bufferColor, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("albedo", m_bufferAlbedo, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("normal", m_bufferNormal, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("output", m_bufferOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+
+			m_oidnFilter.set("hdr", true);
+			m_oidnFilter.commit();
+		}
 		// Check for errors
 		if (m_oidnDevice.getError(errorMessage) != oidn::Error::None)
 			std::cout << "Error1: " << errorMessage << std::endl;
 	}
 
-	void DenoiseBuffer::denoise(){
+	void Denoiser::denoise(){
 		// Copy data to OIDN buffers
 		m_bufferColor.write(0, m_filmSize[0]*m_filmSize[1]*3*sizeof(float), &m_filterColor[0]);
 		m_bufferNormal.write(0, m_filmSize[0]*m_filmSize[1]*3*sizeof(float), &m_filterNormal[0]);
 		m_bufferAlbedo.write(0, m_filmSize[0]*m_filmSize[1]*3*sizeof(float), &m_filterAlbedo[0]);
-
-		m_oidnAlbedoFilter.execute();
-		m_oidnNormalFilter.execute();
+		if (m_filterFeatures){
+			m_oidnAlbedoFilter.execute();
+			m_oidnNormalFilter.execute();
+		}
 		m_oidnFilter.execute();
 
 		// Copy denoied image from OIDN buffer
@@ -75,24 +90,30 @@ MTS_NAMESPACE_BEGIN
 			std::cout << "Error: " << errorMessage << std::endl;
 	}
 
-	void DenoiseBuffer::storeBuffers(std::string filename){
+	void Denoiser::storeBuffers(std::string filename){
 		ref<Bitmap> bitmap_output = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferOutput.getData());
 		bitmap_output->setChannelNames({"output.R", "output.G", "output.B"});
 		ref<Bitmap> bitmap_color  = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferColor.getData());
 		bitmap_color->setChannelNames({"color.R", "color.G", "color.B"});
 		ref<Bitmap> bitmap_albedo = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferAlbedo.getData());
 		bitmap_albedo->setChannelNames({"albedo.R", "albedo.G", "albedo.B"});
-		ref<Bitmap> bitmap_albedo_output = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferAlbedoOutput.getData());
-		bitmap_albedo_output->setChannelNames({"albedo_output.R", "albedo_output.G", "albedo_output.B"});
 		ref<Bitmap> bitmap_normal = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferNormal.getData());
 		bitmap_normal->setChannelNames({"normal.R", "normal.G", "normal.B"});
-		ref<Bitmap> bitmap_normal_output = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferNormalOutput.getData());
-		bitmap_normal_output->setChannelNames({"normal_output.R", "normal_output.G", "normal_output.B"});
-		ref<Bitmap> bitmap = Bitmap::join(Bitmap::EMultiChannel, {bitmap_color, bitmap_albedo, bitmap_albedo_output, bitmap_normal, bitmap_normal_output, bitmap_output});
-		bitmap->write(Bitmap::EOpenEXR, filename);
+
+		if (m_filterFeatures){
+			ref<Bitmap> bitmap_albedo_output = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferAlbedoOutput.getData());
+			bitmap_albedo_output->setChannelNames({"albedo_output.R", "albedo_output.G", "albedo_output.B"});
+			ref<Bitmap> bitmap_normal_output = new Bitmap(Bitmap::ERGB, Bitmap::EFloat32, m_filmSize, 3, (uint8_t*) m_bufferNormalOutput.getData());
+			bitmap_normal_output->setChannelNames({"normal_output.R", "normal_output.G", "normal_output.B"});
+			ref<Bitmap> bitmap = Bitmap::join(Bitmap::EMultiChannel, {bitmap_color, bitmap_albedo, bitmap_albedo_output, bitmap_normal, bitmap_normal_output, bitmap_output});
+			bitmap->write(Bitmap::EOpenEXR, filename);
+		} else {
+			ref<Bitmap> bitmap = Bitmap::join(Bitmap::EMultiChannel, {bitmap_color, bitmap_albedo, bitmap_normal, bitmap_output});
+			bitmap->write(Bitmap::EOpenEXR, filename);			
+		}
 	}
 
-	void DenoiseBuffer::loadBuffers(std::string filename){
+	void Denoiser::loadBuffers(std::string filename){
 		ref<Bitmap> bitmap = new Bitmap(filename, "color");
 		Vector2i size = bitmap->getSize();
 		this->init(size);
@@ -114,7 +135,7 @@ MTS_NAMESPACE_BEGIN
 		m_bufferAlbedoOutput.write(0, size[0]*size[1]*3*sizeof(float), bitmap->getData());
 	}
 
-	void DenoiseBuffer::add(int pixIdx, const DenoiseBuffer::Sample& sample){
+	void Denoiser::add(int pixIdx, const Denoiser::Sample& sample){
 		m_sampleCounts[pixIdx] +=  1;
 		float alpha = 1.f / m_sampleCounts[pixIdx];
 		m_filterColor[pixIdx] = (1.f - alpha) * m_filterColor[pixIdx] + alpha * Vector3(sample.color[0], sample.color[1], sample.color[2]);
@@ -122,7 +143,7 @@ MTS_NAMESPACE_BEGIN
 		m_filterNormal[pixIdx] = (1.f - alpha) * m_filterNormal[pixIdx] + alpha * sample.normal;
 	}
 
-	Spectrum DenoiseBuffer::get(int pixIdx) const {
+	Spectrum Denoiser::get(int pixIdx) const {
 		Spectrum spec;
 		Vector3 output = m_filterOutput[pixIdx];
 		spec.fromLinearRGB(output.x, output.y, output.z);
