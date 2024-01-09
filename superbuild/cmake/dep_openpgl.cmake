@@ -5,8 +5,8 @@ set(COMPONENT_NAME openpgl)
 
 set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE})
 
-set(OPENPGL_URL "git@github.com:intel-innersource/libraries.graphics.renderkit.openpgl.git")
-set(OPENPGL_VERSION "devel")
+set(OPENPGL_URL "ssh://blackpanther:/home/sherholz/gits/openpgl.git")
+set(OPENPGL_VERSION "sh/adrrs-v3-vol")
 
 set(OPENPGL_ARGS
 -DCMAKE_PREFIX_PATH:PATH=${COMPONENT_PATH}

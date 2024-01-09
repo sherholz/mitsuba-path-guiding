@@ -33,6 +33,10 @@
 #include "GuidedPhaseFunction.h"    // implementation of a guided (MIS-bases) phase functiom wrapper
 #include "GuidedRussianRouletteAndSplitting.h"
 
+#include "distance/DistanceSamplingTechiques.h"
+#include "distance/StandardDistanceSampler.h"
+#include "distance/IncrementalGuidedProductDistanceSampler.h"
+
 #include <atomic>
 
 #ifdef OPENPGL_EF_RADIANCE_CACHES
@@ -167,6 +171,22 @@ public:
 		m_loadGuidingCaches = props.getBoolean("loadGuidingCaches", false);
 		m_guidingCachesFile = props.getString("guidingCachesFile", "guidingCaches.field");  
 
+
+        m_distanceSamplerType = (Guiding::DistanceSamplerTypes)props.getInteger("distanceSamplerType", (int)m_distanceSamplerType);
+
+        switch(m_distanceSamplerType){
+            case Guiding::EStandardDS:{
+                    Log(EInfo, "DistanceSampler = StandardDistanceSampler");
+                    m_distanceSampler = new Guiding::StandardDistanceSampler();
+                    break;
+            }
+            case Guiding::EIncrementalGuidedProductDS:{
+                    Log(EInfo, "DistanceSampler = IncrementalGuidedProductDistanceSampler");
+                    m_distanceSampler = new Guiding::IncrementalGuidedProductDistanceSampler(props);
+                    break;
+            }
+        }
+
         m_training = false;
         m_canceled = false;
 
@@ -263,6 +283,9 @@ public:
                 m_guidingField->SetSceneBounds(pglSceneBounds);
                 m_iteration = 0;
             }
+
+            m_distanceSampler->setGuidingField(m_guidingField.get());
+
             m_perThreadGuidedBSDF.resize(nCores);
             m_perThreadGuidedPhaseFunction.resize(nCores);
             for(int i=0; i<nCores; i++)
@@ -302,8 +325,8 @@ public:
             m_guidingField->Store(m_guidingCachesFile);
         }
 #ifdef GUIDING_RR
-		//if (m_savePixelEstimate)
-		if(true)
+		if (m_savePixelEstimate)
+		//if(true)
         {
 			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
             m_pixelEstimateDenoiser.storeBuffers(m_pixelEstimateFile.c_str());
@@ -414,8 +437,7 @@ public:
             }
 
 #ifdef GUIDING_RR
-            //if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
-            if(true)
+            if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
             {
                 m_denoiseTimer->reset();
                 m_pixelEstimateDenoiser.denoise();
@@ -451,7 +473,10 @@ public:
             guidedBSDF = m_perThreadGuidedBSDF.at(threadId);
             guidedPhaseFunction = m_perThreadGuidedPhaseFunction.at(threadId);
             m_threadLocalInitialized.get() = true;
+            m_threadLocalId.get() = threadId;
         }
+
+        int wID = m_threadLocalId.get();
 
         pathSegmentDataStorage->Clear();
 
@@ -510,7 +535,8 @@ public:
             /* ==================================================================== */
             /*                 Radiative Transfer Equation sampling                 */
             /* ==================================================================== */
-            if (rRec.medium && rRec.medium->sampleDistance(Ray(ray, 0, its.t), mRec, rRec.sampler)) {
+            //if (rRec.medium && rRec.medium->sampleDistance(Ray(ray, 0, its.t), mRec, rRec.sampler)) {
+            if (rRec.medium && m_distanceSampler->sampleDistance(rRec.medium, Ray(ray, 0, its.t), mRec, rRec.sampler, wID)) {
 
                 // check if the is contribution from behind the volume
                 // and generate a radiance sample directly
@@ -776,8 +802,10 @@ public:
                     if ((rRec.type & RadianceQueryRecord::EEmittedRadiance)
                         && (!m_hideEmitters || scattered)) {
                         Spectrum value = throughput * scene->evalEnvironment(ray);
-                        if (rRec.medium)
-                            value *= rRec.medium->evalTransmittance(ray, rRec.sampler);
+                        if (rRec.medium) {
+                            //value *= rRec.medium->evalTransmittance(ray, rRec.sampler);
+                            value *= m_distanceSampler->evalTransmittance(rRec.medium, ray, rRec.sampler);
+                        }
                         Li += value;
 
                         /* Adding denoise features */
@@ -1292,9 +1320,10 @@ public:
         while (true) {
             surface = scene->rayIntersect(ray, *its);
 
-            if (medium)
-                transmittance *= medium->evalTransmittance(Ray(ray, 0, its->t), sampler);
-
+            if (medium){
+                //transmittance *= medium->evalTransmittance(Ray(ray, 0, its->t), sampler);
+                transmittance *= m_distanceSampler->evalTransmittance(medium, Ray(ray, 0, its->t), sampler);
+            }
             if (surface && (interactions == maxInteractions ||
                 !(its->getBSDF()->getType() & BSDF::ENull) ||
                 its->isEmitter())) {
@@ -1375,6 +1404,7 @@ private:
     mutable openpgl::cpp::SampleStorage m_sampleStorage;
     mutable std::atomic<size_t> m_maxThreadId;
     mutable PrimitiveThreadLocal<bool> m_threadLocalInitialized;
+    mutable PrimitiveThreadLocal<size_t> m_threadLocalId;
 
     size_t m_minSamplesToStartFitting{128};
 
@@ -1436,6 +1466,10 @@ private:
     ref<Timer> m_fieldUpdateTimer;
     std::vector<float> m_fieldUpdateTimings;
     std::vector<int> m_sampleCounts;
+
+
+    Guiding::DistanceSamplerTypes m_distanceSamplerType {Guiding::EStandardDS};
+    Guiding::DistanceSampler *m_distanceSampler;
 
     MTS_DECLARE_CLASS()
 };
