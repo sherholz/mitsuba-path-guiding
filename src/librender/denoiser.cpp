@@ -50,8 +50,8 @@ MTS_NAMESPACE_BEGIN
 			m_oidnFilter = m_oidnDevice.newFilter("RT");
 			m_oidnFilter.setImage("color", m_bufferColor, oidn::Format::Float3, filmSize[0], filmSize[1]);
 			m_oidnFilter.setImage("albedo", m_bufferAlbedoOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
-			m_oidnFilter.setImage("normal", m_bufferNormal, oidn::Format::Float3, filmSize[0], filmSize[1]);
-			m_oidnFilter.setImage("output", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("normal", m_bufferNormalOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
+			m_oidnFilter.setImage("output", m_bufferOutput, oidn::Format::Float3, filmSize[0], filmSize[1]);
 			m_oidnFilter.set("cleanAux", true); // auxiliary images will be prefiltered
 			m_oidnFilter.set("hdr", true);
 			m_oidnFilter.commit();
