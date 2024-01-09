@@ -1,6 +1,8 @@
 #include <mitsuba/mitsuba.h>
 #include <openpgl/openpgl.h>
 
+MTS_NAMESPACE_BEGIN
+
 namespace Guiding
 {
 
@@ -62,9 +64,11 @@ void parseFieldProperties(mitsuba::Properties &props, openpgl::cpp::FieldConfig 
         abort();
 
     bool deterministic = props.getBoolean("deterministic", true);
-    int samplePerLeafNode= props.getInteger("maxSamplesPerLeafNode", 32000);
+    int samplePerLeafNode = props.getSize("maxSamplesPerLeafNode", 32000);
 
     fieldConfig.Init(PGL_SPATIAL_STRUCTURE_KDTREE, distributionType, deterministic, samplePerLeafNode);
 }
 
 }
+
+MTS_NAMESPACE_END
