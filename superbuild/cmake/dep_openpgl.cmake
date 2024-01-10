@@ -5,7 +5,7 @@ set(COMPONENT_NAME openpgl)
 
 set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE})
 
-set(OPENPGL_URL "ssh://blackpanther:/home/sherholz/gits/openpgl.git")
+set(OPENPGL_URL "git@github.com:sherholz/openpgl-vol.git")
 set(OPENPGL_VERSION "sh/adrrs-v3-vol")
 
 set(OPENPGL_ARGS
