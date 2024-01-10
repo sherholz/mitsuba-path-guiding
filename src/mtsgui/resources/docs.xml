@@ -235,6 +235,33 @@
         </param>
     </plugin>
 
+    <plugin type="integrator" name="guidedprogressivepath" readableName = "Progressive guided path tracer"
+            show="true" className="GuidedProgressivePathTracer" extends="ProgressiveMonteCarloIntegrator">
+        <descr>
+            This integrator implements a guided path tracer with multiple importance sampling.
+            It does not account for participating media, such as fog or smoke&mdash;see
+            the guided volumetric path tracer if this is needed.
+        </descr>
+        <param name="useNee" readableName="use next-event estimation" type="boolean" default="true">
+            Chooses whether next-event estimation is used in the integrator.
+        </param>
+        <param name="useSurfaceGuiding" readableName="use surface guiding" type="boolean" default="true">
+            Chooses whether to use directional guiding on surfaces.
+        </param>
+        <param name="bsdfProbability" readableName="BSDF sampling probability" type="float" default="0.5">
+            The BSDF sampling probability for MIS between guiding and BSDF-based sampling.
+        </param>
+        <param name="guideDirectLight" readableName="guide towards direct light" type="boolean" default="true">
+            Chooses whether to guide towards direct light contributions (e.g., from emitters).
+        </param>
+        <param name="maxSamplesPerLeafNode" readableName="Number max. samples per leaf node" type="integer" default="32000">
+            Maximum number of training samples per leaf node for the spatial structure.
+        </param>
+        <param name="trainingSamples" readableName="Number of training iterrations" type="integer" default="32">
+            Number of training iterations for the guiding caches.
+        </param>
+    </plugin>
+
     <plugin type="integrator" name="volpath_simple" readableName = "Volumetric path tracer (Simple)"
             show="true" className="SimpleVolumetricPathTracer" extends="MonteCarloIntegrator">
         <descr>
@@ -273,6 +300,42 @@
         </descr>
         <param name="useNee" readableName="use next-event estimation" type="boolean" default="true">
             Chooses whether next-event estimation is used in the integrator.
+        </param>
+    </plugin>
+
+    <plugin type="integrator" name="guidedprogressivevolpath" readableName = "Progressive guided volumetric path tracer (Extended)"
+            show="true" className="GuidedProgressiveVolumetricPathTracer" extends="ProgressiveMonteCarloIntegrator">
+        <descr>
+            This plugin provides a guided volumetric path tracer that can be 
+            used to compute approximate solutions to the radiative transfer 
+            equation. Its implementation makes use of multiple importance 
+            sampling to combine BSDF and phase function sampling with direct 
+            illumination sampling strategies. On surfaces, this integrator 
+            behaves exactly like the standard guided path tracer.
+        </descr>
+        <param name="useNee" readableName="use next-event estimation" type="boolean" default="true">
+            Chooses whether next-event estimation is used in the integrator.
+        </param>
+        <param name="useSurfaceGuiding" readableName="use surface guiding" type="boolean" default="true">
+            Chooses whether to use directional guiding on surfaces.
+        </param>
+        <param name="bsdfProbability" readableName="BSDF sampling probability" type="float" default="0.5">
+            The BSDF sampling probability for MIS between guiding and BSDF-based sampling.
+        </param>
+        <param name="useVolumeGuiding" readableName="use volume guiding" type="boolean" default="true">
+            Chooses whether to use directional guiding in volumes.
+        </param>
+        <param name="phaseFunctionProbability" readableName="Phase function sampling probability" type="float" default="0.5">
+            The phase function sampling probability for MIS between guiding and phase function-based sampling.
+        </param>
+        <param name="guideDirectLight" readableName="guide towards direct light" type="boolean" default="true">
+            Chooses whether to guide towards direct light contributions (e.g., from emitters).
+        </param>
+        <param name="maxSamplesPerLeafNode" readableName="Number max. samples per leaf node" type="integer" default="32000">
+            Maximum number of training samples per leaf node for the spatial structure.
+        </param>
+        <param name="trainingSamples" readableName="Number of training iterrations" type="integer" default="32">
+            Number of training iterations for the guiding caches.
         </param>
     </plugin>
 
