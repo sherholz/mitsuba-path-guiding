@@ -8,7 +8,7 @@ MTS_NAMESPACE_BEGIN
 	void Denoiser::init(const Vector2i filmSize, const bool filterFeatures) {
 		m_filterFeatures = filterFeatures;
 		
-		m_oidnDevice = oidn::newDevice(oidn::DeviceType::CPU);
+		m_oidnDevice = oidn::newDevice();
 		m_oidnDevice.commit();
 
 		// Check for errors
