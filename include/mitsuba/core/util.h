@@ -211,6 +211,22 @@ static FINLINE uint64_t rdtsc(void) {
     return static_cast<uint64_t>((tv.tv_sec + tv.tv_usec * 1e-6) * 1.5e9);
 #endif
 }
+#elif defined(__arm64) // assuming Apple silicon (ARM)
+static FINLINE uint64_t rdtsc(void)
+{
+    uint64_t val;
+
+    /*
+     * According to ARM DDI 0487F.c, from Armv8.0 to Armv8.5 inclusive, the
+     * system counter is at least 56 bits wide; from Armv8.6, the counter
+     * must be 64 bits wide.  So the system counter could be less than 64
+     * bits wide and it is attributed with the flag 'cap_user_time_short'
+     * is true.
+     */
+    asm volatile("mrs %0, cntvct_el0" : "=r" (val));
+
+    return val;
+}
 #endif
 #elif defined(__MSVC__)
 static FINLINE __int64 rdtsc(void) {
