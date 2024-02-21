@@ -60,25 +60,36 @@ endmacro()
 ## ======================================================================== ##
 
 option(BUILD_TBB "Build Intel Threading Building Blocks or search in environment?" ON)
+option(BUILD_TBB_FROM_SOURCE "Build Intel Threading Building Blocks from source?" OFF)
 if (BUILD_TBB)
-  set(TBB_VERSION "2021.5.0" CACHE STRING "TBB version to download")
-  if (TBB_VERSION VERSION_LESS 2021)
-    set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}")
+  set(TBB_VERSION "2021.11.0" CACHE STRING "TBB version to download")
+  if (BUILD_TBB_FROM_SOURCE)
+    if (TBB_VERSION VERSION_LESS 2021)
+      message(FATAL_ERROR "Only TBB 2021 and later are supported when building TBB from source")
+    endif()
+
+    string(REGEX REPLACE "(^[0-9]+\.[0-9]+\.[0-9]+$)" "v\\1" TBB_ARCHIVE ${TBB_VERSION})
+    set(_TBB_URL "https://github.com/oneapi-src/oneTBB/archive/refs/tags/${TBB_ARCHIVE}.zip")
+    set(_TBB_HASH "2f0bfce641d238e80798fc48397d43821bd977d49c4e03bc785be363b7ab4742")
   else()
-    set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}")
-  endif()
-  if (APPLE)
-    set(_TBB_URL "${TBB_BASE_URL}-mac.tgz")
-    set(_TBB_HASH "1356e744c29763ee0a6de06647954eb076798c0b7a5b3c1008108d1d76cd42a5")
-    set(TBB_LIB_SUBDIR "")
-  elseif(WIN32)
-    set(_TBB_URL "${TBB_BASE_URL}-win.zip")
-    set(_TBB_HASH "90e2055cd4be55f79eedd3d50b2010bf05d1739309c4cdd219192d129e931093")
-    set(TBB_LIB_SUBDIR "intel64/vc14")
-  else()
-    set(_TBB_URL "${TBB_BASE_URL}-lin.tgz")
-    set(_TBB_HASH "74861b1586d6936b620cdab6775175de46ad8b0b36fa6438135ecfb8fb5bdf98")
-    set(TBB_LIB_SUBDIR "intel64/gcc4.8")
+    if (TBB_VERSION VERSION_LESS 2021)
+      set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}")
+    else()
+      set(TBB_BASE_URL "https://github.com/oneapi-src/oneTBB/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}")
+    endif()
+    if (APPLE)
+      set(_TBB_URL "${TBB_BASE_URL}-mac.tgz")
+      set(_TBB_HASH "360bcb20bcdcd01e8492c32bba6d5d5baf4bc83f77fb9dbf1ff701ac816e3b44")
+      set(TBB_LIB_SUBDIR "")
+    elseif(WIN32)
+      set(_TBB_URL "${TBB_BASE_URL}-win.zip")
+      set(_TBB_HASH "02f0e93600fba69bb1c00e5dd3f66ae58f56e5410342f6155455a95ba373b1b6")
+      set(TBB_LIB_SUBDIR "intel64/vc14")
+    else()
+      set(_TBB_URL "${TBB_BASE_URL}-lin.tgz")
+      set(_TBB_HASH "95659f4d7b1711c41ffa190561d4e5b6841efc8091549661c7a2e6207e0fa79b")
+      set(TBB_LIB_SUBDIR "intel64/gcc4.8")
+    endif()
   endif()
   set(TBB_URL "${_TBB_URL}" CACHE STRING "URL of the TBB archive.")
   set(TBB_HASH "${_TBB_HASH}" CACHE STRING "SHA256 hash of the TBB archive.")
@@ -112,6 +123,7 @@ endif()
 
 option(BUILD_DEPENDENCIES "Build Mitsuba dependecies?" ON)
 if (BUILD_DEPENDENCIES)
+  include(dep_boost)
   include(dep_eigen)
   include(dep_jpeg)
   include(dep_png)
@@ -154,6 +166,7 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
     -DOpenImageDenoise_DIR=${CMAKE_PREFIX_PATH}"/lib/cmake/OpenImageDenoise-"${OIDN_VERSION}
     -DOPENEXR_HOME=${CMAKE_INSTALL_PREFIX}
     -DILMBASE_HOME=${CMAKE_INSTALL_PREFIX}
+    -DGLEW_ROOT_DIR=${CMAKE_INSTALL_PREFIX}
   )
 
   ExternalProject_Add(mitsuba
@@ -171,6 +184,7 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
 
   ExternalProject_Add_StepDependencies(mitsuba
   configure
+    $<$<BOOL:${BUILD_DEPENDENCIES}>:boost>
     $<$<BOOL:${BUILD_DEPENDENCIES}>:eigen>
     $<$<BOOL:${BUILD_DEPENDENCIES}>:jpeg>
     $<$<BOOL:${BUILD_DEPENDENCIES}>:png>
