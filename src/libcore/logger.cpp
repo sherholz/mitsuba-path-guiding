@@ -131,9 +131,10 @@ void Logger::log(ELogLevel level, const Class *theClass,
         size = sizeof(info);
         sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
         bool runningInDebugger = (info.kp_proc.p_flag & P_TRACED) != 0;
-
+#if defined(__i386__) || defined(__x86_64__)
         if (runningInDebugger)
             __asm__ ("int $3");
+#endif
 #elif defined(__WINDOWS__)
         if (IsDebuggerPresent())
             __debugbreak();
