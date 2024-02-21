@@ -8,7 +8,8 @@ include (CMakeDependentOption)
 
 # Offer an option to automatically bundle qt4image through BundleUtilities
 include(CMakeDependentOption)
-if(APPLE OR WIN32)
+#if(APPLE OR WIN32)
+if(WIN32)
   set(MTS_FIXUP_BUNDLE_DEFAULT ON)
 else()
   set(MTS_FIXUP_BUNDLE_DEFAULT OFF)
