@@ -42,7 +42,7 @@ if (BUILD_OIDN_FROM_SOURCE)
     BUILD_ALWAYS OFF
   )
 
-  if (DOWNLOAD_TBB)
+  if (BUILD_TBB)
     ExternalProject_Add_StepDependencies(${COMPONENT_NAME} configure tbb)
   endif()
   if (DOWNLOAD_ISPC)
