@@ -51,7 +51,9 @@ fi
 unset mitsuba_plugin_dir
 
 if [[ "$(uname)" == 'Darwin' ]]; then
-	export PATH="$MITSUBA_DIR/Mitsuba.app/Contents/MacOS:$PATH"
+	export PATH="$MITSUBA_DIR/dist/Mitsuba.app/Contents/MacOS:$PATH"
+	export DYLD_LIBRARY_PATH="$MITSUBA_DIR/dist/Mitsuba.app/Contents/Frameworks:$DYLD_LIBRARY_PATH"
+	export DYLD_LIBRARY_PATH="$MITSUBA_DIR/dist/lib:$DYLD_LIBRARY_PATH"
 else
 	export LD_LIBRARY_PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/dist/lib:$LD_LIBRARY_PATH"
 	export PATH="$MITSUBA_DIR/dist:$PATH"
