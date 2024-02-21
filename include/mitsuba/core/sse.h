@@ -45,7 +45,11 @@
 #define disable_fpexcept_sse()
 #else
 /* Include SSE intrinsics header file */
+#if !defined(__ARM_NEON)
 #include <emmintrin.h>
+#else
+#include "sse2neon.h"
+#endif
 /* MSVC intrinsics header (for RDTSC) */
 #if defined(__MSVC__)
 # include <intrin.h>
@@ -56,9 +60,15 @@
 #define splat_epi32(ps, i)       _mm_shuffle_epi32((ps), (i<<6) | (i<<4) | (i<<2) | i)
 #define mux_ps(sel, op1, op2)    _mm_or_ps   (_mm_and_ps   ((sel), (op1)), _mm_andnot_ps   ((sel), (op2)))
 #define mux_epi32(sel, op1, op2) _mm_or_si128(_mm_and_si128((sel), (op1)), _mm_andnot_si128((sel), (op2)))
+#if !defined(__ARM_NEON)
 #define enable_fpexcept_sse()    _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO))
 #define query_fpexcept_sse()     (~_MM_GET_EXCEPTION_MASK() & (_MM_MASK_INVALID | _MM_MASK_DIV_ZERO))
 #define disable_fpexcept_sse()   _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() | (_MM_MASK_INVALID | _MM_MASK_DIV_ZERO))
+#else
+#define enable_fpexcept_sse()
+#define query_fpexcept_sse() 0
+#define disable_fpexcept_sse()
+#endif
 #define load1_epi32(i)           _mm_shuffle_epi32(_mm_cvtsi32_si128(i), 0)
 #define negate_ps(val)           _mm_xor_ps((val), SSEConstants::negation_mask.ps)
 
