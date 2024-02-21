@@ -60,11 +60,8 @@ endif()
 
 
 # Finds the include files directory
-if(NOT APPLE)
-  set(GLEW_BASE_DIR "GL")
-else()
-  set(GLEW_BASE_DIR "OpenGL")
-endif()
+set(GLEW_BASE_DIR "GL")
+
 find_path(GLEW_INCLUDE_DIR ${GLEW_BASE_DIR}/glew.h
   HINTS ${GLEW_ROOT_DIR}/include
   PATHS ${GLEW_generic_include_path}
