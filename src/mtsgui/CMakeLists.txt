@@ -188,7 +188,7 @@ if (APPLE)
  
   # CMake script to poplutate the bundle resources
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BundleComponents.cmake"
-"cmake_minimum_required(VERSION 2.8.0 FATAL_ERROR)
+"cmake_minimum_required(VERSION 3.12)
 
 # Configure the Info.plist to add the version
 if (NOT DEFINED MTS_VERSION)

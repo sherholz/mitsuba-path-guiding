@@ -1,6 +1,5 @@
 # Experimental CMake file for Mitusba
-# Tested only on Windows and Linux (Ubuntu 10.10)
-cmake_minimum_required(VERSION 2.8.3 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12)
 
 # Internal variable to know whether this is the first time CMake runs
 if (NOT DEFINED MTS_CMAKE_INIT)
