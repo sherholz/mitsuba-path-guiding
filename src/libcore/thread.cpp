@@ -519,14 +519,14 @@ static int __omp_threadCount = 0;
 static pthread_key_t __omp_key;
 static bool __omp_key_created;
 
-int mts_omp_get_max_threads() {
+size_t mts_omp_get_max_threads() {
     /* This function exists to sidestep an annoying
        implementation bug that causes crashes on OSX */
     return __omp_threadCount;
 }
 
-int mts_omp_get_thread_num() {
-    return reinterpret_cast<int>(pthread_getspecific(__omp_key));
+size_t mts_omp_get_thread_num() {
+    return reinterpret_cast<size_t>(pthread_getspecific(__omp_key));
 }
 #endif
 

@@ -231,12 +231,15 @@ int main (int argc, char **argv) {
 endif ()
 
 # Try to get OpenMP support
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 CMAKE_DEPENDENT_OPTION(MTS_OPENMP "Enable OpenMP support" ON
-  "OPENMP_FOUND" OFF)
+  "OpenMP_FOUND" OFF)
 if (MTS_OPENMP)
   set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+  include_directories(${OpenMP_CXX_INCLUDE_DIRS} ${OpenMP_C_INCLUDE_DIRS})
+  link_libraries(${OpenMP_C_LIBRARIES})
+  add_definitions (-DMTS_OPENMP)
 else ()
   add_definitions (-DMTS_NO_OPENMP)
 endif()
