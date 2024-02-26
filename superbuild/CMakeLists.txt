@@ -1,6 +1,6 @@
 ## Global settings ##
 
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
@@ -159,7 +159,17 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
     -DILMBASE_HOME=${CMAKE_INSTALL_PREFIX}
     -DGLEW_ROOT_DIR=${CMAKE_INSTALL_PREFIX}
   )
-
+if(APPLE)
+  if(OpenMP_ROOT)
+    set(MITSUBA_ARGS ${MITSUBA_ARGS}
+      -DOpenMP_ROOT:PATH=${OpenMP_ROOT}
+    )
+  else()
+    set(MITSUBA_ARGS ${MITSUBA_ARGS}
+      -DOpenMP_ROOT:PATH=/opt/homebrew/opt/libomp
+    )
+  endif()
+endif()
   ExternalProject_Add(mitsuba
     PREFIX mitsuba
     DOWNLOAD_COMMAND ""
