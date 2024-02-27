@@ -179,9 +179,15 @@ if(APPLE)
       -DOpenMP_ROOT:PATH=${OpenMP_ROOT}
     )
   else()
-    set(MITSUBA_ARGS ${MITSUBA_ARGS}
-      -DOpenMP_ROOT:PATH=/opt/homebrew/opt/libomp
-    )
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "arm64")
+      set(MITSUBA_ARGS ${MITSUBA_ARGS}
+        -DOpenMP_ROOT:PATH=/opt/homebrew/opt/libomp
+      )
+    else()
+      set(MITSUBA_ARGS ${MITSUBA_ARGS}
+        -DOpenMP_ROOT:PATH=/usr/local/opt/libomp
+      )
+    endif()
   endif()
 endif()
   ExternalProject_Add(mitsuba
