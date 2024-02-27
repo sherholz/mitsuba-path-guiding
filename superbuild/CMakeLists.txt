@@ -113,6 +113,11 @@ endif()
 option(BUILD_OIDN "Build OpenImageDenoise as a part of the superbuild." ON)
 option(BUILD_OIDN_FROM_SOURCE "Build OpenImageDenoise or use pre-built version?" ON)
 set(OIDN_VERSION "2.2.0" CACHE STRING "Which version of OpenImageDenoise to build?")
+
+if(BUILD_OIDN_FROM_SOURCE)
+
+  include(dep_ispc)
+endif()
 if (BUILD_OIDN)
   include(dep_oidn)
 endif()
