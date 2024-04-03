@@ -97,14 +97,25 @@ if (BUILD_TBB)
 endif()
 
 ## ======================================================================== ##
-## Build OpenEXR
+## Build Dependencies
 ## ======================================================================== ##
 
-option(BUILD_OPENEXR "Build OpenEXR as a part of the superbuild." ON)
-if (BUILD_OPENEXR)
-    include(dep_openexr)
+option(BUILD_DEPENDENCIES "Build Mitsuba dependecies?" ON)
+if (DEPS_DIR)
+  set(BUILD_DEPENDENCIES OFF)
 endif()
-
+if (BUILD_DEPENDENCIES)
+  include(dep_boost)
+  include(dep_eigen)
+  include(dep_jpeg)
+  include(dep_png)
+  include(dep_xerces)
+  #include(dep_freeglut)
+  include(dep_openexr)
+  include(dep_glew)
+  include(dep_blosc)
+  include(dep_vdb)
+endif()
 
 ## ======================================================================== ##
 ## Build OpenImageDenoise
@@ -115,27 +126,12 @@ option(BUILD_OIDN_FROM_SOURCE "Build OpenImageDenoise or use pre-built version?"
 set(OIDN_VERSION "2.2.0" CACHE STRING "Which version of OpenImageDenoise to build?")
 
 if(BUILD_OIDN_FROM_SOURCE)
-
   include(dep_ispc)
 endif()
 if (BUILD_OIDN)
   include(dep_oidn)
 endif()
 
-## ======================================================================== ##
-## Build Dependencies
-## ======================================================================== ##
-
-option(BUILD_DEPENDENCIES "Build Mitsuba dependecies?" ON)
-if (BUILD_DEPENDENCIES)
-  include(dep_boost)
-  include(dep_eigen)
-  include(dep_jpeg)
-  include(dep_png)
-  include(dep_xerces)
-  #include(dep_freeglut)
-  include(dep_glew)
-endif()
 
 
 ## ======================================================================== ##
@@ -145,6 +141,10 @@ endif()
 option(BUILD_DEPENDENCIES_ONLY "Build only the dependency libraries (e.g., Eigen, Glew, libJpeg, libPNG, ...)." OFF)
 
 if (NOT BUILD_DEPENDENCIES_ONLY)
+
+  if(NOT DEPS_DIR)
+    set(DEPS_DIR ${CMAKE_INSTALL_PREFIX})
+  endif()
 
   set(MITSUBA_ARGS
     -DCMAKE_PREFIX_PATH:PATH=${CMAKE_INSTALL_PREFIX}
@@ -157,12 +157,13 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
     -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}
     -DCMAKE_INSTALL_DOCDIR=${CMAKE_INSTALL_DOCDIR}
     -DCMAKE_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
-    $<$<BOOL:${BUILD_TBB}>:-DTBB_ROOT=${CMAKE_INSTALL_PREFIX}>
+    $<$<BOOL:${BUILD_TBB}>:-DTBB_ROOT=${DEPS_DIR}>
     -Dopenpgl_DIR=${openpgl_DIR}
-    -DOpenImageDenoise_DIR=${CMAKE_PREFIX_PATH}"/lib/cmake/OpenImageDenoise-"${OIDN_VERSION}
-    -DOPENEXR_HOME=${CMAKE_INSTALL_PREFIX}
-    -DILMBASE_HOME=${CMAKE_INSTALL_PREFIX}
-    -DGLEW_ROOT_DIR=${CMAKE_INSTALL_PREFIX}
+    -DOpenImageDenoise_DIR=${DEPS_DIR}"/lib/cmake/OpenImageDenoise-"${OIDN_VERSION}
+    -DOPENEXR_HOME=${DEPS_DIR}
+    -DILMBASE_HOME=${DEPS_DIR}
+    -DGLEW_ROOT_DIR=${DEPS_DIR}
+    -DMITSUBA_DEPS=${DEPS_DIR}
   )
 if(APPLE)
   if(OpenMP_ROOT)
@@ -197,6 +198,8 @@ endif()
     $<$<BOOL:${BUILD_DEPENDENCIES}>:xerces>
     #$<$<BOOL:${BUILD_DEPENDENCIES}>:freeglut>
     $<$<BOOL:${BUILD_DEPENDENCIES}>:glew>
+    $<$<BOOL:${BUILD_DEPENDENCIES}>:blosc>
+    $<$<BOOL:${BUILD_DEPENDENCIES}>:openvdb>
     $<$<BOOL:${BUILD_OPENEXR}>:openexr>
     $<$<BOOL:${BUILD_TBB}>:tbb>
     $<$<BOOL:${BUILD_OIDN}>:oidn>
