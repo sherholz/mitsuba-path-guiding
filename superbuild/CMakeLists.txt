@@ -125,7 +125,7 @@ option(BUILD_OIDN "Build OpenImageDenoise as a part of the superbuild." ON)
 option(BUILD_OIDN_FROM_SOURCE "Build OpenImageDenoise or use pre-built version?" ON)
 set(OIDN_VERSION "2.2.0" CACHE STRING "Which version of OpenImageDenoise to build?")
 
-if(BUILD_OIDN_FROM_SOURCE)
+if(BUILD_OIDN_FROM_SOURCE AND BUILD_OIDN)
   include(dep_ispc)
 endif()
 if (BUILD_OIDN)
@@ -156,7 +156,7 @@ if (NOT BUILD_DEPENDENCIES_ONLY)
   endif()
 
   set(MITSUBA_ARGS
-    -DCMAKE_PREFIX_PATH:PATH=${CMAKE_INSTALL_PREFIX}
+    -DCMAKE_PREFIX_PATH:PATH=${DEPS_DIR}
     -DBUILD_PYTHON=ON
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}

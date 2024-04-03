@@ -32,7 +32,7 @@ ExternalProject_Add (
 
   PREFIX         ${EP_BOOST}/source/boost
   BUILD_IN_SOURCE 1
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
+  URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz
   BUILD_ALWAYS   OFF
 
   LIST_SEPARATOR | # Use the alternate list separator

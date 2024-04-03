@@ -29,8 +29,8 @@ if (MTS_CMAKE_INIT)
   endif()
 endif()
 
-# Use C++11 for the compilation
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -fPIC")
+# Use C++17 for the compilation
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17 -fPIC")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_SYSTEM_NO_DEPRECATED")
 
 # Top level configuration definitions
@@ -139,14 +139,3 @@ option(MTS_IGNORE_NULLBSDF_INTERSECTIONS "Ignore indexed-mathched (NullBSDF) int
 if (MTS_IGNORE_NULLBSDF_INTERSECTIONS)
   add_definitions(-DMTS_IGNORE_NULLBSDF_INTERSECTIONS)
 endif()
-
-# Use CUDA as an option
-option(MTS_CUDA "Cuda use for reconstruction" OFF)
-if (MTS_CUDA)
-  add_definitions(-DMTS_HAS_CUDA=1)
-else()
-  add_definitions(-DMTS_HAS_CUDA=0)
-endif()
-
-# Special option for calcul Quebec
-option(MTS_CLUSTER_COMPILATION "Option to compile on CLUSTER" OFF)
