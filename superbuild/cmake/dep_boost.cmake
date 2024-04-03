@@ -7,6 +7,12 @@ set(BOOST_BUILD_COMMAND ./b2 install --layout=tagged --prefix=${CMAKE_INSTALL_PR
 
 set(BOOST_PYTHON_VERSIONS)
 
+if(APPLE)
+  set(BOOST_URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz)
+else()
+  set(BOOST_URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz)
+endif()
+
 if (USE_PYTHON)
   message("writing file: " ${CMAKE_CURRENT_BINARY_DIR}/source/boost/python-config.jam)
   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/source/boost/python-config.jam)
@@ -32,7 +38,7 @@ ExternalProject_Add (
 
   PREFIX         ${EP_BOOST}/source/boost
   BUILD_IN_SOURCE 1
-  URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz
+  URL ${BOOST_URL}
   BUILD_ALWAYS   OFF
 
   LIST_SEPARATOR | # Use the alternate list separator

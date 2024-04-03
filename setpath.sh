@@ -57,4 +57,5 @@ if [[ "$(uname)" == 'Darwin' ]]; then
 else
 	export LD_LIBRARY_PATH="$MITSUBA_DIR/dist:$MITSUBA_DIR/dist/lib:$LD_LIBRARY_PATH"
 	export PATH="$MITSUBA_DIR/dist:$PATH"
+	export LD_LIBRARY_PATH="$MITSUBA_DIR/deps/lib:$LD_LIBRARY_PATH"
 fi

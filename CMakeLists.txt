@@ -66,25 +66,6 @@ if (MTS_CMAKE_INIT AND DEFINED CMAKE_BUILD_TYPE AND NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: Debug, Release, RelWithDebInfo, MinSizeRel." FORCE)
 endif()
 
-# If we are on the cluster, change the base path
-if(MTS_CLUSTER_COMPILATION)
-	# For Boost
-	set(BOOST_EXT "/software/CentOS-6/libraries/boost-1.57")
-	#set(BOOST_EXT "/home/neodym60/renderers")
-
-	set(BOOST_ROOT "${BOOST_EXT}")
-	set(BOOST_LIBRARYDIR "${BOOST_EXT}/lib")
-	set(Boost_NO_SYSTEM_PATHS ON)
-	set(BOOST_INCLUDEDIR "${BOOST_EXT}/include")
-
-	# For Xerces
-	set(XERCES_ROOT_DIR /home/neodym60/renderers)
-	set(EIGEN_ROOT_DIR /home/neodym60/renderers)
-	set(Eigen_INCLUDE_DIR /home/neodym60/renderers/include)
-	set(EXTERNAL_ROOT_DIR /home/neodym60/renderers)
-	set(GLEW_ROOT_DIR /home/neodym60/renderers)
-endif()
-
 # Load the required modules
 include (MitsubaUtil)
 include (MtsGetVersionInfo)

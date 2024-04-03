@@ -152,9 +152,6 @@ find_package(ZLIB 1.2 REQUIRED)
 find_package(PNG 1.2 REQUIRED)
 add_definitions(${PNG_DEFINITIONS})
 
-if(MTS_CLUSTER_COMPILATION)
-	# No OpenEXR for now
-else(MTS_CLUSTER_COMPILATION)
 find_package(OpenEXR)
 if (OPENEXR_FOUND AND WIN32)
   set(CMAKE_REQUIRED_INCLUDES ${OPENEXR_INCLUDE_DIR}/OpenEXR)
@@ -179,7 +176,6 @@ int main(int argc, char **argv) {
     add_definitions(-DOPENEXR_DLL)
   endif()
 endif()
-endif(MTS_CLUSTER_COMPILATION)
 
 # XERCES_ROOT_DIR
 find_package(Xerces 3.0 REQUIRED)
@@ -299,6 +295,10 @@ if (JPEG_FOUND)
 endif()
 if (OPENEXR_FOUND)
   add_definitions(-DMTS_HAS_OPENEXR=1)
+endif()
+
+if(MITSUBA_DEPS)
+  link_directories(${MITSUBA_DEPS}/lib)
 endif()
 
 # CUDA found for the poisson reconstruction
