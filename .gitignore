@@ -70,3 +70,7 @@ mitsuba.*.log
 .settings
 .cproject
 .project
+
+./install*
+./build*
+deps
