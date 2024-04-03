@@ -30,6 +30,8 @@ MTS_NAMESPACE_BEGIN
  */
 #define HETVOL_EARLY_EXIT 1
 
+//#define RATIO_TRACKING
+
 /// Generate a few statistics related to the implementation?
 // #define HETVOL_STATISTICS 1
 
@@ -177,7 +179,9 @@ public:
          * incompatible with bidirectional rendering methods, which
          * usually need to know the probability of a sample.
          */
-        EWoodcockTracking
+        EWoodcockTracking,
+
+        EDeltaTrackingRIS
     };
 
     HeterogeneousMedium(const Properties &props)
@@ -197,6 +201,8 @@ public:
             m_method = EWoodcockTracking;
         else if (method == "simpson")
             m_method = ESimpsonQuadrature;
+        else if (method == "deltaRIS")
+            m_method = EDeltaTrackingRIS;
         else
             Log(EError, "Unsupported integration method \"%s\"!", method.c_str());
     }
@@ -563,11 +569,16 @@ public:
             Float result = 0;
 
             for (int i=0; i<nSamples; ++i) {
+#if defined(RATIO_TRACKING)
+                Float estTr = 1.0;
+#endif
                 Float t = mint;
                 while (true) {
                     t -= math::fastlog(1-sampler->next1D()) * m_invMaxDensity;
                     if (t >= maxt) {
+#if !defined(RATIO_TRACKING)
                         result += 1;
+#endif
                         break;
                     }
 
@@ -577,10 +588,17 @@ public:
                     #if defined(HETVOL_STATISTICS)
                         ++avgRayMarchingStepsTransmittance;
                     #endif
-
-                    if (density * m_invMaxDensity > sampler->next1D())
+                    Float scatterProb = density * m_invMaxDensity;
+#if !defined(RATIO_TRACKING)
+                    if (scatterProb > sampler->next1D())
                         break;
+#else
+                    estTr *= (1.f - scatterProb);
+#endif
                 }
+#if defined(RATIO_TRACKING)
+                result += estTr;
+#endif
             }
             return Spectrum(result/nSamples);
         }
@@ -610,7 +628,53 @@ public:
             mRec.pdfSuccessRev = expVal * densityAtMinT;
             mRec.transmittance = Spectrum(expVal);
             mRec.time = ray.time;
-        } else {
+        } else if(m_method == EWoodcockTracking) {
+            /* The following information is invalid when
+               using Woodcock-tracking */
+            mRec.pdfFailure = 1.0f;
+            mRec.pdfSuccess = 1.0f;
+            mRec.pdfSuccessRev = 1.0f;
+            mRec.transmittance = Spectrum(1.0f);
+            mRec.time = ray.time;
+
+            #if defined(HETVOL_STATISTICS)
+                avgRayMarchingStepsSampling.incrementBase();
+            #endif
+
+            Float mint, maxt;
+            if (!m_densityAABB.rayIntersect(ray, mint, maxt))
+                return false;
+            mint = std::max(mint, ray.mint);
+            maxt = std::min(maxt, ray.maxt);
+
+            Float t = mint, densityAtT = 0;
+            while (true) {
+                t -= math::fastlog(1-sampler->next1D()) * m_invMaxDensity;
+                if (t >= maxt)
+                    break;
+
+                Point p = ray(t);
+                densityAtT = lookupDensity(p, ray.d) * m_scale;
+                #if defined(HETVOL_STATISTICS)
+                    ++avgRayMarchingStepsSampling;
+                #endif
+                if (densityAtT * m_invMaxDensity > sampler->next1D()) {
+                    mRec.t = t;
+                    mRec.p = p;
+                    Spectrum albedo = m_albedo->lookupSpectrum(p);
+                    mRec.sigmaS = albedo * densityAtT;
+                    mRec.sigmaA = Spectrum(densityAtT) - mRec.sigmaS;
+                    mRec.transmittance = Spectrum(densityAtT != 0.0f ? 1.0f / densityAtT : 0);
+                    if (!std::isfinite(mRec.transmittance[0])) // prevent rare overflow warnings
+                        mRec.transmittance = Spectrum(0.0f);
+                    mRec.orientation = m_orientation != NULL
+                        ? m_orientation->lookupVector(p) : Vector(0.0f);
+                    mRec.medium = this;
+                    success = true;
+                    break;
+                }
+            }
+        } else { // Delta Tracking RIS
             /* The following information is invalid when
                using Woodcock-tracking */
             mRec.pdfFailure = 1.0f;
