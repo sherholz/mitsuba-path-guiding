@@ -42,6 +42,8 @@
 #ifdef OPENPGL_EF_RADIANCE_CACHES
 #define GUIDING_RR
 #endif
+
+#define SCATTER_GUIDING
 //#define GUIDING_SIGMA_S
 
 // typedef of the guiding classes
@@ -132,10 +134,14 @@ public:
         //m_useBSDFProduct                = props.getBoolean("useBSDFProduct", false);
         m_bsdfProbability               = props.getFloat("bsdfProbability", 0.5f);
         m_phaseFunctionProbability      = props.getFloat("phaseFunctionProbability", 0.5f);
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR)
         m_guidedRR                      = props.getBoolean("guidedRR", false);
 #endif
         m_rrCorrection                  = props.getBoolean("useRRCorrection", true);
+
+#if defined(GUIDING_RR)
+        m_guidedScatter                      = props.getBoolean("guidedScatter", false);
+#endif
 
         m_surfaceAdjointType            = Guiding::getSurfaceAdjointType(props.getString("surfaceAdjoint","lo"));
         m_volumeAdjointType             = Guiding::getVolumeAdjointType(props.getString("volumeAdjoint","lo"));
@@ -162,7 +168,7 @@ public:
         m_overallTrainingSamples            = props.getSize("trainingSamples", 32);
         m_trainingSamplesPerIteration       = props.getSize("maxSamplesPerIteration", 1);
         m_samplesPerProgression = m_trainingSamplesPerIteration;
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
 		m_savePixelEstimate = props.getBoolean("savePixelEstimate", false);
 		m_loadPixelEstimate = props.getBoolean("loadPixelEstimate", false);
 		m_pixelEstimateFile = props.getString("pixelEstimateFile", "pixEst.exr");
@@ -201,8 +207,8 @@ public:
 		}	
 
         m_accountForDirectLightMiWeight = m_useNee;
-#ifdef GUIDING_RR
-        if(m_guidedRR)
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
+        if(m_guidedRR || m_guidedScatter)
         {
             m_rrDepth = 1;
             m_calulatePixelEstimate = true;
@@ -297,7 +303,7 @@ public:
             m_fieldUpdateTimer = new Timer();
             m_fieldUpdateTimings.clear();
             m_sampleCounts.clear();
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
             m_denoiseTimer = new Timer();
             if(m_loadPixelEstimate && fs::exists(m_pixelEstimateFile))
             {
@@ -324,7 +330,7 @@ public:
         {
             m_guidingField->Store(m_guidingCachesFile);
         }
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
 		if (m_savePixelEstimate)
 		//if(true)
         {
@@ -436,7 +442,7 @@ public:
                 m_sampleStorage.Clear();
             }
 
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
             if (m_calulatePixelEstimate && m_progressionCounter == std::pow(2.0f, m_pixelEstimateWave))
             {
                 m_denoiseTimer->reset();
@@ -1277,7 +1283,7 @@ public:
         {
             pathSegmentDataStorage->Clear();
         }
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
         denoiseSample.color = Li;
         m_pixelEstimateDenoiser.add(rRec.pixelId, denoiseSample);
 #endif
@@ -1422,8 +1428,15 @@ private:
     bool m_accountForDirectLightMiWeight{false};
     bool m_deterministic;
 
-#ifdef GUIDING_RR
+#if defined(GUIDING_RR)
     bool m_guidedRR {true};
+#endif
+
+#if defined(SCATTER_GUIDING)
+    bool m_guidedScatter {false};
+#endif
+
+#if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
     bool m_pixelEstimateReady {false};
     mutable Denoiser m_pixelEstimateDenoiser;
 
