@@ -139,8 +139,8 @@ public:
 #endif
         m_rrCorrection                  = props.getBoolean("useRRCorrection", true);
 
-#if defined(GUIDING_RR)
-        m_guidedScatter                      = props.getBoolean("guidedScatter", false);
+#if defined(SCATTER_GUIDING)
+        m_guidedScatter                      = props.getBoolean("guidedScatter", true);
 #endif
 
         m_surfaceAdjointType            = Guiding::getSurfaceAdjointType(props.getString("surfaceAdjoint","lo"));
@@ -169,9 +169,11 @@ public:
         m_trainingSamplesPerIteration       = props.getSize("maxSamplesPerIteration", 1);
         m_samplesPerProgression = m_trainingSamplesPerIteration;
 #if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
-		m_savePixelEstimate = props.getBoolean("savePixelEstimate", false);
+		m_savePixelEstimate = props.getBoolean("savePixelEstimate", true);
 		m_loadPixelEstimate = props.getBoolean("loadPixelEstimate", false);
 		m_pixelEstimateFile = props.getString("pixelEstimateFile", "pixEst.exr");
+        m_pixelEstimateFile = "pixEst.exr";
+        m_savePixelEstimate = true;
 #endif
 		m_saveGuidingCaches = props.getBoolean("saveGuidingCaches", false);
 		m_loadGuidingCaches = props.getBoolean("loadGuidingCaches", false);
@@ -208,9 +210,12 @@ public:
 
         m_accountForDirectLightMiWeight = m_useNee;
 #if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
+        if(m_guidedRR) {
+            m_rrDepth = 1;
+        }
+
         if(m_guidedRR || m_guidedScatter)
         {
-            m_rrDepth = 1;
             m_calulatePixelEstimate = true;
         }
 
@@ -228,6 +233,7 @@ public:
             m_calulatePixelEstimate = false;
 		}
 #endif
+        std::cout << "m_savePixelEstimate = " << m_savePixelEstimate << std::endl;
     }
 
     /// Unserialize from a binary data stream
@@ -313,8 +319,11 @@ public:
                 ref<Sensor> sensor = static_cast<Sensor *>(sched->getResource(sensorResID));
                 ref<Film> film = sensor->getFilm();
                 Vector2i filmSize = film->getSize();
-                m_pixelEstimateDenoiser.init(filmSize);
+                m_pixelEstimateDenoiser.init(filmSize, true);
                 m_pixelEstimateReady = false;
+
+                m_surfaceContributionDenoiser.init(filmSize, true);
+                m_volumeContributionDenoiser.init(filmSize, true);
             }
 #endif
         }
@@ -336,6 +345,8 @@ public:
         {
 			Log( EInfo, "PixelEstimate::store = %s", m_pixelEstimateFile.c_str());
             m_pixelEstimateDenoiser.storeBuffers(m_pixelEstimateFile.c_str());
+            m_surfaceContributionDenoiser.storeBuffers("surfaceContribution.exr");
+            m_volumeContributionDenoiser.storeBuffers("volumeContribution.exr");
 		}
 #endif
         SLog(EInfo, "AvgX. path length: %f (%d/%d)",
@@ -447,6 +458,8 @@ public:
             {
                 m_denoiseTimer->reset();
                 m_pixelEstimateDenoiser.denoise();
+                m_surfaceContributionDenoiser.denoise();
+                m_volumeContributionDenoiser.denoise();
                 Log( EInfo, "Filter[%d]: took %fs", m_progressionCounter, m_denoiseTimer->getMilliseconds() * 1e-3f );
                 m_pixelEstimateReady = true;
                 m_pixelEstimateWave++;
@@ -456,7 +469,7 @@ public:
     }
 
     Spectrum Li(const RayDifferential &r, RadianceQueryRecord &rRec) const {
-
+        bool isSurfaceSample = true;
 	    bool useFWD = true;
 #ifdef GUIDING_RR
         Spectrum pixelEstimate = m_pixelEstimateReady ? m_pixelEstimateDenoiser.get(rRec.pixelId) : Spectrum(0.f);
@@ -642,8 +655,9 @@ public:
 #endif
                 /* Adding denoise features */
                 if (numDiffuseGlossyInteractions == 0) {
-                    denoiseSample.albedo = throughput/**mRec.sigmaS*//(mRec.sigmaS+mRec.sigmaA);
+                    denoiseSample.albedo = throughput*mRec.sigmaS/(mRec.sigmaS+mRec.sigmaA);
                     denoiseSample.normal = -ray.d;
+                    isSurfaceSample = false;
                 }
                 numDiffuseGlossyInteractions++;
 
@@ -815,8 +829,10 @@ public:
                         Li += value;
 
                         /* Adding denoise features */
-                        if (numDiffuseGlossyInteractions == 0)
+                        if (numDiffuseGlossyInteractions == 0) {
                             denoiseSample.albedo = value;
+                            isSurfaceSample = true;
+                        }
                     }
                     if (nextHitEmitter) { // Add Envmap if we hit an emitter
                         //std::cout << "PING: depth = " << rRec.depth<< std::endl;
@@ -899,6 +915,7 @@ public:
                 if ((bsdfType & BSDF::EDiffuse || bsdfType & BSDF::EGlossy) && numDiffuseGlossyInteractions == 0) {
                     denoiseSample.albedo = throughput * surfaceBSDF->getAlbedo(rRec.its);
                     denoiseSample.normal = rRec.its.toWorld(Vector3(0, 0, 1));
+                    isSurfaceSample = true;
                     numDiffuseGlossyInteractions++;
                 }
 
@@ -1286,6 +1303,13 @@ public:
 #if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
         denoiseSample.color = Li;
         m_pixelEstimateDenoiser.add(rRec.pixelId, denoiseSample);
+        if(isSurfaceSample){
+            m_surfaceContributionDenoiser.add(rRec.pixelId, denoiseSample);
+            m_volumeContributionDenoiser.addZeroColor(rRec.pixelId);
+        } else {
+            m_surfaceContributionDenoiser.addZeroColor(rRec.pixelId);
+            m_volumeContributionDenoiser.add(rRec.pixelId, denoiseSample);
+        }
 #endif
         return Li;
     }
@@ -1439,6 +1463,9 @@ private:
 #if defined(GUIDING_RR) || defined(SCATTER_GUIDING)
     bool m_pixelEstimateReady {false};
     mutable Denoiser m_pixelEstimateDenoiser;
+
+    mutable Denoiser m_surfaceContributionDenoiser;
+    mutable Denoiser m_volumeContributionDenoiser;
 
     bool m_calulatePixelEstimate {false};
     int m_pixelEstimateWave {0};
