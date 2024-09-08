@@ -71,6 +71,6 @@ mitsuba.*.log
 .cproject
 .project
 
-./install*
-./build*
-deps
+install*
+build*
+deps*
