@@ -8,9 +8,9 @@ set(BOOST_BUILD_COMMAND ./b2 install --layout=tagged --prefix=${CMAKE_INSTALL_PR
 set(BOOST_PYTHON_VERSIONS)
 
 if(APPLE)
-  set(BOOST_URL https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz)
+  set(BOOST_URL https://archives.boost.io/release/1.78.0/source/boost_1_78_0.tar.gz)
 else()
-  set(BOOST_URL https://boostorg.jfrog.io/artifactory/main/release/1.74.0/source/boost_1_74_0.tar.gz)
+  set(BOOST_URL https://archives.boost.io/release/1.74.0/source/boost_1_74_0.tar.gz)
 endif()
 
 if (USE_PYTHON)
