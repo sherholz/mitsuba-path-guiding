@@ -10,7 +10,6 @@ cmake   -DBUILD_DEPENDENCIES_ONLY=ON \
         -DBUILD_OPENPGL=OFF \
         -DCMAKE_INSTALL_PREFIX=../../deps \
         ../../superbuild
-make -j 
-make install
+make -j
 cd ..
 rm -rdf build/deps
