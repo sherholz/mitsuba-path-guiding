@@ -5,7 +5,7 @@ if (INSTALL_IN_SEPARATE_DIRECTORIES)
   set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/${COMPONENT_NAME})
 endif()
 
-set(BLOSC_URL "https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.5.tar.gz")
+set(BLOSC_URL "https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.6.tar.gz")
 
 set(BLOSC_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}

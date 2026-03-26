@@ -3,14 +3,14 @@ option(USE_PYTHON2 "if USE_PYTHON enabled, use python2 instead of python3" FALSE
 
 set (EP_BOOST "boost")
 
-set(BOOST_BUILD_COMMAND ./b2 install --layout=tagged --prefix=${CMAKE_INSTALL_PREFIX} --build-dir=${CMAKE_CURRENT_BINARY_DIR}/build -j${BUILD_JOBS} address-model=64 link=shared runtime-link=shared threading=multi variant=release --with-atomic --with-program_options --with-regex --with-date_time --with-system --with-thread --with-iostreams --with-filesystem --with-serialization --with-wave --with-chrono)
+set(BOOST_BUILD_COMMAND ./b2 install --layout=tagged --prefix=${CMAKE_INSTALL_PREFIX} --build-dir=${CMAKE_CURRENT_BINARY_DIR}/build -j${BUILD_JOBS} address-model=64 link=shared runtime-link=shared threading=multi variant=release --with-atomic --with-program_options --with-regex --with-date_time --with-system --with-thread --with-iostreams --with-filesystem --with-serialization --with-wave --with-chrono cxxflags="-Wno-enum-constexpr-conversion")
 
 set(BOOST_PYTHON_VERSIONS)
 
 if(APPLE)
-  set(BOOST_URL https://archives.boost.io/release/1.78.0/source/boost_1_78_0.tar.gz)
+  set(BOOST_URL https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.gz)
 else()
-  set(BOOST_URL https://archives.boost.io/release/1.74.0/source/boost_1_74_0.tar.gz)
+  set(BOOST_URL https://archives.boost.io/release/1.82.0/source/boost_1_82_0.tar.gz)
 endif()
 
 if (USE_PYTHON)
