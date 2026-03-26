@@ -7,7 +7,7 @@ set(COMPONENT_NAME openvdb)
 set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE})
 
 set(OPENVDB_URL "https://github.com/AcademySoftwareFoundation/openvdb.git")
-set(OPENVDB_VERSION "v11.0.0")
+set(OPENVDB_VERSION "v13.0.0")
 
 set(OPENVDB_ARGS ""
   -DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}  
@@ -15,8 +15,11 @@ set(OPENVDB_ARGS ""
   -DCMAKE_BUILD_TYPE=Release
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-  -DCMAKE_CXX_FLAGS=-Wno-enum-constexpr-conversion
-  -DCMAKE_C_FLAGS=-Wno-enum-constexpr-conversion
+  -DCMAKE_CXX_FLAGS:STRING=-Wno-enum-constexpr-conversion
+  -DCMAKE_C_FLAGS:STRING=-Wno-enum-constexpr-conversion
+  ### Why is the second flag not considered ???
+  #-DCMAKE_CXX_FLAGS:STRING="-Wno-enum-constexpr-conversion -Wno-missing-template-arg-list-after-template-kw"
+  #-DCMAKE_C_FLAGS:STRING="-Wno-enum-constexpr-conversion -Wno-missing-template-arg-list-after-template-kw"
   -DCMAKE_INSTALL_PREFIX=${COMPONENT_PATH}
   -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
   -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}

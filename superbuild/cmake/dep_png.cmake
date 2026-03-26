@@ -5,7 +5,7 @@ if (INSTALL_IN_SEPARATE_DIRECTORIES)
   set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/${COMPONENT_NAME})
 endif()
 
-set(PNG_URL "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip")
+set(PNG_URL "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.56.zip")
 
 set(PNG_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
