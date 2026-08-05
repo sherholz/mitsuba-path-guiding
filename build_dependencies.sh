@@ -2,6 +2,8 @@ mkdir build
 mkdir build/deps
 cd build/deps
 
+export CMAKE_POLICY_VERSION_MINIMUM=3.5
+
 cmake   -DBUILD_DEPENDENCIES_ONLY=ON \
         -DBUILD_OIDN=ON \
         -DBUILD_OIDN_FROM_SOURCE=ON \
