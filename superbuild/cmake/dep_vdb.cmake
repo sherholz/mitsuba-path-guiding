@@ -9,14 +9,16 @@ set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE})
 set(OPENVDB_URL "https://github.com/AcademySoftwareFoundation/openvdb.git")
 set(OPENVDB_VERSION "v11.0.0")
 
+set(CFLAGS "-Wno-enum-constexpr-conversion -Wno-missing-template-arg-list-after-template-kw")
+
 set(OPENVDB_ARGS ""
   -DCMAKE_PREFIX_PATH:PATH=${CMAKE_PREFIX_PATH}  
   #-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
   -DCMAKE_BUILD_TYPE=Release
   -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-  -DCMAKE_CXX_FLAGS=-Wno-enum-constexpr-conversion
-  -DCMAKE_C_FLAGS=-Wno-enum-constexpr-conversion
+  -DCMAKE_CXX_FLAGS=${CFLAGS}
+  -DCMAKE_C_FLAGS:=${CFLAGS}
   -DCMAKE_INSTALL_PREFIX=${COMPONENT_PATH}
   -DCMAKE_INSTALL_INCLUDEDIR=${CMAKE_INSTALL_INCLUDEDIR}
   -DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}

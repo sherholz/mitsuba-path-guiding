@@ -5,7 +5,7 @@ if (INSTALL_IN_SEPARATE_DIRECTORIES)
   set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/${COMPONENT_NAME})
 endif()
 
-set(FREEGLUT_URL "https://github.com/FreeGLUTProject/freeglut/releases/download/v3.4.0/freeglut-3.4.0.tar.gz")
+set(FREEGLUT_URL "https://github.com/freeglut/freeglut/releases/download/v3.8.0/freeglut-3.8.0.tar.gz")
 
 set(FREEGLUT_ARGS
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
@@ -13,6 +13,12 @@ set(FREEGLUT_ARGS
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     -DCMAKE_INSTALL_PREFIX=${COMPONENT_PATH}
 )
+
+if(APPLE)
+  set(FREEGLUT_ARGS ${FREEGLUT_ARGS}
+      -DFREEGLUT_COCOA=ON
+  )
+endif()
 
 #set(GLEW_CONFIGURE_COMMAND ${CMAKE_COMMAND} ${GLEW_ARGS} ${CMAKE_CURRENT_BINARY_DIR}/${COMPONENT_NAME}/src/build/cmake)
 
